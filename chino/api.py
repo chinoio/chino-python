@@ -23,7 +23,7 @@ class ChinoAPI():
     """
     __username = ''
     __password = ''
-    __url = 'http://api.chino.io/'
+    __url = 'https://api.chino.io/'
 
     # TODO: write docstring
     def __init__(self, username, password, version='v1'):
@@ -209,6 +209,16 @@ class ChinoAPI():
         url = "repositories/%s/schemas" % repository
         return self.__apicall(POST, url, data=data)['schema']
 
+    def schema_detail(self, schema_id):
+        """
+        Details of a schema in a repository.
+
+        :param schema_id: (id) of the schema
+        :return: (dict) the schema.
+        """
+        url = "schemas/%s" % schema_id
+        return self.__apicall(GET, url)['schema']
+
     def schema_update(self, schema_id, **kwargs):
         url = "schemas/%s" % schema_id
         return self.__apicall(PUT, url, data=kwargs)['schema']
@@ -247,13 +257,14 @@ class ChinoAPI():
         return self.__apicall(GET, url)['document']
 
     def document_update(self, document_id, **kwargs):
+        # data = dict(content=content)
         url = "documents/%s" % document_id
         return self.__apicall(PUT, url, data=kwargs)['document']
 
     def document_delete(self, document_id, force=False):
-        url = "schemas/%s" % document_id
+        url = "documents/%s" % document_id
         if force:
-            params = dict(force=True)
+            params = dict(force='true')
         else:
             params = None
         return self.__apicall(DELETE, url, params)
@@ -261,7 +272,9 @@ class ChinoAPI():
     # UTILS
 
     def __apicall(self, method, url, params=None, data=None):
+
         url = self.__url + url
+        print "-- calling %s %s (%s) %s" % (method, url, params, data)
         if method == GET:
             res = self.__apicall_get(url, params)
         elif method == POST:
@@ -275,6 +288,7 @@ class ChinoAPI():
         self.valid_call(res)
         try:
             # if result has data
+
             data = res.json()['data']
             return data
         except:
@@ -299,6 +313,7 @@ class ChinoAPI():
 
     @staticmethod
     def valid_call(r):
+        print "-- result call %s" % r.json()
         if r.status_code == requests.codes.ok:
             return True
         else:
