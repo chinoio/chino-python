@@ -1,10 +1,12 @@
+import hashlib
 import json
 import logging
+import os
 
 import requests
 from requests.auth import HTTPBasicAuth
 
-from chino.exceptions import MethodNotSupported, CallError, CallFail
+from chino.exceptions import MethodNotSupported, CallError, CallFail, ClientError
 
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
@@ -20,23 +22,62 @@ class ChinoAPI:
     """
     CHINO API wrapper
     """
-    __username = ''
-    __password = ''
+    __customer_id = None
+    __customer_key = None
+    __customer_token = None
     __url = 'https://api.chino.io/'
+    __ACCESS_TOKEN = 'ACCESS_TOKEN'
+    __auth = None
 
     # TODO: write docstring
-    def __init__(self, username, password, version='v1', url=None):
-        self.__username = username
-        self.__password = password
+    def __init__(self, customer_id, customer_key=None, customer_token=None, version='v1', url=None):
+        '''
+        Init the class
+
+        :param customer_id: mandatory
+        :param customer_key: optional, if specified the auth is set as chino customer (admin)
+        :param customer_token: optional, if specified the auth is as user
+        :param version: default is `v1`, change if you know what to do
+        :param url: the url, this should be changed only for testing
+        :return: the class
+        '''
+        self.__customer_id = customer_id
+        self.__customer_token = customer_key
+        self.__customer_token = customer_token
         if url:
             self.__url = url
         self.__url = self.__url + version + "/"
+        # if customer_key is set, then set auth as that
+        if customer_key:
+            self.set_auth_admin()
+        # if customer_token is set, then use it as customer
+        elif customer_token:
+            self.set_auth_user()
+
+    def set_auth_admin(self):
+        self.__auth = HTTPBasicAuth(self.__customer_id, self.__customer_key)
+
+    def set_auth_user(self):
+        self.__auth = HTTPBasicAuth(self.__ACCESS_TOKEN, self.__customer_token)
 
     # AUTH
-    def auth_user_login(self, username, password, customer_id):
+    def auth_user_login(self, username, password, customer_id=None):
+        # remove auth
+        auth = self.__auth
+        self.__auth = None
         url = "auth/login"
+        if not customer_id
+            customer_id = self.__customer_id
         pars = dict(username=username, password=password, customer_id=customer_id)
-        return self.__apicall(POST, url, params=pars)
+        try:
+            user = self.__apicall(POST, url, params=pars)['user']
+            self.__customer_token = user['customer_token']
+            self.set_auth_user()
+        except Exception as ex:
+            # reset auth if things go wrong
+            self.__auth = auth
+            # propagate exception
+            raise ex
 
     def auth_user_status(self):
         url = "auth/info"
@@ -277,6 +318,48 @@ class ChinoAPI:
 
     # BLOBS
 
+    def blob_send(self, document_id, blob_field_name, file_path, chunk_size=12 * 1024):
+        if not os.path.exists(file_path):
+            raise ClientError("File not found")
+        # start the blob
+        blobdata = self.blob_start(document_id, blob_field_name, os.path.basename(file_path))
+        # get the id and intial offset
+        upload_id = blobdata['upload_id']
+        offset = 0
+        # open the file and start reading it
+        rd = open(file_path, "rb")
+        sha1 = hashlib.sha1()
+        chunk = ""
+        byte = rd.read(1)
+        chunk += byte
+        actual_size = 1
+        # read all the file
+        while byte != "":
+            # if enough byte are read
+            if actual_size == chunk_size:
+                # send a cuhnk
+                blobdata = self.blob_chunk(upload_id, chunk, offset)
+                # update offset
+                offset = blobdata['offset']
+                # update the hash
+                sha1.update(chunk)
+                chunk = ""
+                actual_size = 0
+            # read the byte
+            byte = rd.read(1)
+            actual_size += 1
+            chunk += byte
+        # if end of the file
+        if actual_size != 0:
+            self.blob_chunk(upload_id, chunk, offset)
+            sha1.update(chunk)
+        rd.close()
+        # commit and check if everything was fine
+        commit = self.blob_commit(upload_id)
+        if sha1 != commit['sha1']:
+            raise CallFail('The file was not uploaded correctly')
+        return commit
+
     def blob_start(self, document_id, field, field_name):
         url = 'blobs'
         data = dict(document_id=document_id, field=field, field_name=field_name)
@@ -339,19 +422,19 @@ class ChinoAPI:
             return True
 
     def __apicall_put(self, url, data):
-        r = requests.put(url, auth=HTTPBasicAuth(self.__username, self.__password), data=json.dumps(data))
+        r = requests.put(url, auth=self.__auth, data=json.dumps(data))
         return r
 
     def __apicall_post(self, url, data):
-        r = requests.post(url, auth=HTTPBasicAuth(self.__username, self.__password), data=json.dumps(data))
+        r = requests.post(url, auth=self.__auth, data=json.dumps(data))
         return r
 
     def __apicall_get(self, url, params):
-        r = requests.get(url, auth=HTTPBasicAuth(self.__username, self.__password), params=params)
+        r = requests.get(url, auth=self.__auth, params=params)
         return r
 
     def __apicall_delete(self, url, params):
-        r = requests.delete(url, auth=HTTPBasicAuth(self.__username, self.__password), params=params)
+        r = requests.delete(url, auth=self.__auth, params=params)
         return r
 
     @staticmethod
