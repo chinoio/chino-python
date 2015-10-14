@@ -12,58 +12,77 @@ passing your `customer_id` and `customer_key`
 
 this will give you access to the methods:
 
-**User**
+### AUTH
 
-- user_list:
-- user_detail
-- user_create
-- user_update
-- user_delete
+- /auth/login auth_user_login
+- /auth/info auth_user_status
+- /auth/logout auth_user_logout
 
-**Group**
+### User
 
-- group_list
-- group_detail
-- group_create
-- group_update
-- group_delete
-- group_add_user
-- group_del_user
+- /users user_list:
+- /users user_detail
+- /users/{user_id} user_create
+- /users/{user_id} user_update
+- /users/{user_id} user_delete
 
-**Permission**
+### Group
 
-- permission_user
-- permission_create_user
-- permission_group
-- permission_schema
+- /groups group_list
+- /groups group_create
+- /groups/{group_id} group_detail
+- /groups/{group_id} group_update
+- /groups/{group_id} group_delete
+- /groups/{group_id}/users/{user_id} group_add_user
+- /groups/{group_id}/users/{user_id} group_del_user
 
-**Repository**
+### Permission
 
-- repository_list
-- repository_detail
-- repository_create
-- repository_update
-- repository_delete
+- /perms/users/{user_id} permission_user
+- /perms/schema/{schema_id}/users/{user_id} permission_create_user
+- /perms/schema/{schema_id}/users/{user_id} permission_delete_user
+- /perms/groups/{group_id} permission_group
+- /perms/schemas/{schema_id} permission_schema
+- /perms/schema/{schema_id}/groups/{group_id} permission_create_group
+- /perms/schema/{schema_id}/groups/{group_id} permission_delete_group
 
-**Schemas**
+### Repository
 
-- schemas_list
-- schema_create
-- schema_detail
-- schema_update
-- schema_delete
-- schema_add_user
-- schema_del_user
+- /repositories repository_list
+- /repositories repository_create
+- /repositories/{repository_id} repository_detail
+- /repositories/{repository_id} repository_update
+- /repositories/{repository_id} repository_delete
 
-**Document**
+### Schemas
 
-- documents_list
-- document_create
-- document_detail
-- document_update
-- document_delete
+- /repositories/{repository_id}/schemas schemas_list
+- /repositories/{repository_id}/schemas schema_create
+- /schemas/{schema_id} schema_detail
+- /schemas/{schema_id} schema_update
+- /schemas/{schema_id} schema_delete
 
-*Plus methods that are utils for auth and to manage comunications*
+### Document
+
+- /schemas/{schema_id}/documents documents_list
+- /schemas/{schema_id}/documents document_create
+- /documents/{document_id} document_detail
+- /documents/{document_id} document_update
+- /documents/{document_id} document_delete
+
+### BLOB
+
+- /blobs blob_start
+- /blobs blob_chunk
+- /blobs/commit blob_commit
+- /blobs/{blob_id} blob_detail (returns a dict with `filename` and `blob`)
+- /blobs/{blob_id} blob_delete
+
+### SEARCH
+
+- /search/{schema_id} search
+
+*Plus methods that are utils for auth and to manage communications*
 
 ##Note:
 
@@ -97,10 +116,14 @@ requires the following package (via pip)
 - sphinx-rtd-theme
 
 #Status
-Still in dev
+Beta
 
 ##TODO:
 
-- add missing calls
-- test all the methods: BLOB, Search 
-- upload test class
+- TEST
+- Write 
+
+#BUILD AND USAGE
+
+- `python setup.py install`
+-  in python `from chino.api import ChinoAPI`

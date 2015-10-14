@@ -1,5 +1,3 @@
-__author__ = 'Stefano Tranquillini <stefano@chino.io>'
-
 import json
 import logging
 
@@ -8,6 +6,7 @@ from requests.auth import HTTPBasicAuth
 
 from chino.exceptions import MethodNotSupported, CallError, CallFail
 
+__author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +16,7 @@ PUT = 'PUT'
 DELETE = 'DELETE'
 
 
-class ChinoAPI():
+class ChinoAPI:
     """
     CHINO API wrapper
     """
@@ -26,9 +25,11 @@ class ChinoAPI():
     __url = 'https://api.chino.io/'
 
     # TODO: write docstring
-    def __init__(self, username, password, version='v1'):
+    def __init__(self, username, password, version='v1', url=None):
         self.__username = username
         self.__password = password
+        if url:
+            self.__url = url
         self.__url = self.__url + version + "/"
 
     # AUTH
@@ -107,14 +108,18 @@ class ChinoAPI():
 
     # PERMISSIONS
 
-    def permission_user(self, schema_id, user_id):
-        url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
+    def permission_user(self, user_id):
+        url = "perms/users/%s" % user_id
         return self.__apicall(GET, url)
 
     def permission_create_user(self, schema_id, user_id, own_data, all_data, insert=True):
         data = dict(own_data=own_data, all_data=all_data, insert=insert)
         url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
         return self.__apicall(POST, url, data)
+
+    def permission_delete_user(self, schema_id, user_id):
+        url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
+        return self.__apicall(DELETE, url)
 
     def permission_group(self, group_id):
         url = "perms/groups/%s" % group_id
@@ -123,6 +128,15 @@ class ChinoAPI():
     def permission_schema(self, schema_id):
         url = "perms/schemas/%s" % schema_id
         return self.__apicall(GET, url)
+
+    def permission_create_group(self, schema_id, group_id, own_data, all_data, insert=True):
+        data = dict(own_data=own_data, all_data=all_data, insert=insert)
+        url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
+        return self.__apicall(POST, url, data)
+
+    def permission_delete_group(self, schema_id, group_id):
+        url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
+        return self.__apicall(DELETE, url)
 
     # REPOSITORY
 
@@ -231,14 +245,6 @@ class ChinoAPI():
             params = None
         return self.__apicall(DELETE, url, params)
 
-    def schema_add_user(self, schema_id, user_id):
-        url = "schemas/%s/users/%s" % (schema_id, user_id)
-        return self.__apicall(POST, url)
-
-    def schema_del_user(self, schema_id, user_id):
-        url = "schemas/%s/users/%s" % (schema_id, user_id)
-        return self.__apicall(DELETE, url)
-
     # DOCUMENT
 
     def documents_list(self, schema_id, **pars):
@@ -269,8 +275,46 @@ class ChinoAPI():
             params = None
         return self.__apicall(DELETE, url, params)
 
-    # UTILS
+    # BLOBS
 
+    def blob_start(self, document_id, field, field_name):
+        url = 'blobs'
+        data = dict(document_id=document_id, field=field, field_name=field_name)
+        return self.__apicall(POST, url, data=data)['blob']
+
+    def blob_chunk(self, upload_id, data, offset):
+        url = 'blobs'
+        data = dict(upload_id=upload_id, data=data, offset=offset)
+        return self.__apicall(PUT, url, data=data)['blob']
+
+    def blob_commit(self, upload_id):
+        url = 'blobs/commit'
+        data = dict(upload_id=upload_id)
+        return self.__apicall(POST, url, data=data)['blob']
+
+    def blob_detail(self, blob_id):
+        url = 'blobs/%s' % blob_id
+        # this is different
+        res = self.__apicall_get(url, None)
+        fname = res.headers['Content-Disposition'].split(';')[1].split('=')[1]
+        return dict(filename=fname, blob=res.json())
+
+    def blob_delete(self, blob_id):
+        url = 'blobs/%s' % blob_id
+        return self.__apicall(DELETE, url)
+
+    # Search
+
+    def search(self, schema_id, result_type="FULL_CONTENT", filter_type="and", sort=None, filters=None):
+        url = 'search'
+        if not sort:
+            sort = []
+        if not filters:
+            filters = []
+        data = dict(schema_id=schema_id, result_type=result_type, filter_type=filter_type, sort=sort, filters=filters)
+        return self.__apicall(POST, url, data=data)['documents']
+
+    # UTILS
     def __apicall(self, method, url, params=None, data=None):
 
         url = self.__url + url
@@ -288,7 +332,6 @@ class ChinoAPI():
         self.valid_call(res)
         try:
             # if result has data
-
             data = res.json()['data']
             return data
         except:
@@ -313,7 +356,6 @@ class ChinoAPI():
 
     @staticmethod
     def valid_call(r):
-        print "-- result call %s" % r.json()
         if r.status_code == requests.codes.ok:
             return True
         else:
