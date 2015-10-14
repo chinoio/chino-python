@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import json
 import logging
@@ -42,7 +43,7 @@ class ChinoAPI:
         :return: the class
         '''
         self.__customer_id = customer_id
-        self.__customer_token = customer_key
+        self.__customer_key = customer_key
         self.__customer_token = customer_token
         if url:
             self.__url = url
@@ -66,7 +67,7 @@ class ChinoAPI:
         auth = self.__auth
         self.__auth = None
         url = "auth/login"
-        if not customer_id
+        if not customer_id:
             customer_id = self.__customer_id
         pars = dict(username=username, password=password, customer_id=customer_id)
         try:
@@ -327,7 +328,9 @@ class ChinoAPI:
         upload_id = blobdata['upload_id']
         offset = 0
         # open the file and start reading it
+        logger.debug("file size %s", os.path.getsize(file_path))
         rd = open(file_path, "rb")
+
         sha1 = hashlib.sha1()
         chunk = ""
         byte = rd.read(1)
@@ -356,18 +359,18 @@ class ChinoAPI:
         rd.close()
         # commit and check if everything was fine
         commit = self.blob_commit(upload_id)
-        if sha1 != commit['sha1']:
-            raise CallFail('The file was not uploaded correctly')
+        if sha1.hexdigest() != commit['sha1']:
+            raise CallFail(500, 'The file was not uploaded correctly')
         return commit
 
     def blob_start(self, document_id, field, field_name):
         url = 'blobs'
-        data = dict(document_id=document_id, field=field, field_name=field_name)
+        data = dict(document_id=document_id, field=field, file_name=field_name)
         return self.__apicall(POST, url, data=data)['blob']
 
     def blob_chunk(self, upload_id, data, offset):
         url = 'blobs'
-        data = dict(upload_id=upload_id, data=data, offset=offset)
+        data = dict(upload_id=upload_id, data=base64.b64encode(data), offset=offset)
         return self.__apicall(PUT, url, data=data)['blob']
 
     def blob_commit(self, upload_id):
@@ -376,11 +379,12 @@ class ChinoAPI:
         return self.__apicall(POST, url, data=data)['blob']
 
     def blob_detail(self, blob_id):
-        url = 'blobs/%s' % blob_id
+        # NOTE: this calls directly the function. needed to get the headers
+        url = self.__url + 'blobs/%s' % blob_id
         # this is different
         res = self.__apicall_get(url, None)
         fname = res.headers['Content-Disposition'].split(';')[1].split('=')[1]
-        return dict(filename=fname, blob=res.json())
+        return dict(filename=fname, blob=res.content)
 
     def blob_delete(self, blob_id):
         url = 'blobs/%s' % blob_id
@@ -442,6 +446,7 @@ class ChinoAPI:
         if r.status_code == requests.codes.ok:
             return True
         else:
+            logger.debug(r.text)
             try:
                 status = r.json()['result']
             except:

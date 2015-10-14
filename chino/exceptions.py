@@ -25,7 +25,7 @@ class CallError(ApiError):
 
 class CallFail(CallError):
     def __init__(self, code, message):
-        super(self, CallFail).__init__(code, message)
+        super(CallFail, self).__init__(code, message)
 
 
 class MethodNotSupported(ClientError):

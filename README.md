@@ -15,7 +15,7 @@ this will give you access to the methods:
 ### Init
 
 - to init the `ChinoAPI` import it `from chino.api import ChinoAPI`
-- chino = ChinoAPI(<pars>)
+- `chino = ChinoAPI(customer_id=..,customer_key=..,customer_token=..)`
     
     - customer_id: mandatory
     - customer_key: optional, if specified the auth is set as admin
