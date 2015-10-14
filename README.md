@@ -134,9 +134,14 @@ requires the following package (via pip)
 Beta
 
 ##TODO:
-
 - TEST
 - Write 
+
+### for the next relase
+We can have Objects with fields to access value and functions. E.g., `r = Reposity(id)` will have `r.description` but also `r.schemas()` which gives all the schemas of that repository.
+
+For doing so we need to create an initial layer where user can create repositories, search and so on, and then all the objects.
+
 
 #BUILD AND USAGE
 
