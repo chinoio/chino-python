@@ -88,18 +88,18 @@ this will give you access to the methods:
 
 The calls returns the object (as explained in the doc) for correct calls or raise an Exception if there's an error. Thus, you can catch the exception in the code if something bad happens.
 
-Create methods specifies the required parameters, e.g.:
+Create methods have the required parameters, e.g.:
 
 `document_create(self, schema_id, content, insert_user=None):`
 
-Update methods accepts arbitrary parameters (check the docs):
+Update methods accept arbitrary parameters (but check the docs otherwise there will be an error from the server):
 
 `document_update(self, document_id, **kwargs):`
 
-This means that the `document_update` can be called as: 
+This means that, for example, the `document_update` can be called as: 
 
 - `document_update(<id_doc>,content=dict(...))` 
-- `document_update(<id_doc>,description='')` 
+- `document_update(<id_doc>,description='...')` 
 - or with both
 
 
