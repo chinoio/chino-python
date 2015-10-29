@@ -5,3 +5,4 @@ Chino_API_Python_.egg-info
 build
 chino.egg-info
 dist
+.coverage
