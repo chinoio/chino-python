@@ -17,7 +17,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from chino.exceptions import MethodNotSupported, CallError, CallFail, ClientError
-from chino.objects import Repository, ListResult, User, Group
+from chino.objects import Repository, ListResult, User, Group, Schema
 
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
@@ -48,7 +48,7 @@ class ChinoAPIBase(object): #PRAGMA: NO COVER
     def apicall(self, method, url, params=None, data=None):
         method = method.upper()
         url = self._url + url
-        logger.debug("calling %s %s p(%s) d(%s)" % (method, url, params, data))
+        # logger.debug("calling %s %s p(%s) d(%s)" % (method, url, params, data))
         if method == 'GET':
             res = self.__apicall_get(url, params)
         elif method == 'POST':
@@ -97,7 +97,7 @@ class ChinoAPIBase(object): #PRAGMA: NO COVER
 
     @staticmethod
     def valid_call(r):
-        logger.debug("%s Response %s ", r.request.url, r.json())
+        # logger.debug("%s Response %s ", r.request.url, r.json())
         if r.status_code == requests.codes.ok:
             return True
         else:
@@ -189,16 +189,17 @@ class ChinoAPIGroups(ChinoAPIBase):
     def create(self, groupname, attributes):
         data = dict(groupname=groupname, attributes=attributes)
         url = "groups"
-        return self.apicall('POST', url, data=data)['group']
+        return Group(**self.apicall('POST', url, data=data)['group'])
 
     def update(self, group_id, **kwargs):
+        print kwargs
         url = "groups/%s" % group_id
         return self.apicall('PUT', url, data=kwargs)['group']
 
     def delete(self, group_id, force=False):
         url = "groups/%s" % group_id
         if force:
-            params = dict(force=True)
+            params = dict(force='true')
         else:
             params = None
         return self.apicall('DELETE', url, params)
@@ -270,7 +271,7 @@ class ChinoAPIRepositories(ChinoAPIBase):
         :return: (dict) the repository.
         """
         url = "repositories/%s" % repository_id
-        return self.apicall('GET', url)['repository']
+        return Repository(**self.apicall('GET', url)['repository'])
 
     def create(self, description):
         """
@@ -281,7 +282,7 @@ class ChinoAPIRepositories(ChinoAPIBase):
         """
         data = dict(description=description)
         url = "repositories"
-        return self.apicall('POST', url, data=data)['repository']
+        return Repository(**self.apicall('POST', url, data=data)['repository'])
 
     def update(self, repository_id, **kwargs):
         """
@@ -292,7 +293,7 @@ class ChinoAPIRepositories(ChinoAPIBase):
         :return: (dict) the repository.
         """
         url = "repositories/%s" % repository_id
-        return self.apicall('PUT', url, data=kwargs)['repository']
+        return Repository(**self.apicall('PUT', url, data=kwargs)['repository'])
 
     def delete(self, repository_id, force=False):
         """
@@ -322,7 +323,7 @@ class ChinoAPISchemas(ChinoAPIBase):
         :return: dict containing ``count``,``total_count``,``limit``,``offset``,``repositories``
         """
         url = "repositories/%s/schemas" % repository_id
-        return self.apicall('GET', url, params=pars)
+        return ListResult(Schema,self.apicall('GET', url, params=pars))
 
     def create(self, repository, description, fields):
         """
@@ -335,7 +336,7 @@ class ChinoAPISchemas(ChinoAPIBase):
         """
         data = dict(description=description, structure=dict(fields=fields))
         url = "repositories/%s/schemas" % repository
-        return self.apicall('POST', url, data=data)['schema']
+        return Schema(**self.apicall('POST', url, data=data)['schema'])
 
     def detail(self, schema_id):
         """
@@ -345,16 +346,16 @@ class ChinoAPISchemas(ChinoAPIBase):
         :return: (dict) the schema.
         """
         url = "schemas/%s" % schema_id
-        return self.apicall('GET', url)['schema']
+        return Schema(**self.apicall('GET', url)['schema'])
 
     def update(self, schema_id, **kwargs):
         url = "schemas/%s" % schema_id
-        return self.apicall('PUT', url, data=kwargs)['schema']
+        return Schema(**self.apicall('PUT', url, data=kwargs)['schema'])
 
     def delete(self, schema_id, force=False):
         url = "schemas/%s" % schema_id
         if force:
-            params = dict(force=True)
+            params = dict(force='true')
         else:
             params = None
         return self.apicall('DELETE', url, params)

@@ -21,9 +21,11 @@ class ChinoBaseObject(object):
         return self.__dict__
 
     def __str__(self):
+        # return str(self.to_dict())
         return "%s - %s" % (self.__str_name__.upper(), self.to_dict())
 
     def __repr__(self):
+        # return str(self.to_dict())
         return "<%s:%s>" % (self.__str_name__.upper(), self.id)
 
 
@@ -82,6 +84,7 @@ class _DictContent(ChinoBaseObject):
     @property
     def id(self):
         return "-"
+
 
 class Repository(ChinoBaseObject):
     """
@@ -145,7 +148,7 @@ class User(ChinoBaseObject):
 
     def to_dict(self):
         res = super(User, self).to_dict()
-        if hasattr(res,'password'):
+        if hasattr(res, 'password'):
             del res['password']
         if self.attributes:
             if type(self.attributes) is not dict:
@@ -163,7 +166,8 @@ class User(ChinoBaseObject):
         self.groups = groups
         self.password = password
 
-#     TODO: add attribute funciton
+
+# TODO: add attribute funciton
 
 class Group(ChinoBaseObject):
     """
@@ -189,6 +193,13 @@ class Group(ChinoBaseObject):
     @property
     def id(self):
         return self.group_id
+
+    def to_dict(self):
+        res = super(Group, self).to_dict()
+        if self.attributes:
+            if type(self.attributes) is not dict:
+                res['attributes'] = self.attributes.to_dict()
+        return res
 
     def __init__(self, group_id=None, groupname=None, insert_date=None, is_active=None, last_update=None,
                  attributes=None):
@@ -320,22 +331,39 @@ class Schema(ChinoBaseObject):
             }
     """
 
+    __str_name__ = 'schema'
+    __str_names__ = 'schemas'
+
+    def to_dict(self):
+        res = super(Schema, self).to_dict()
+        # print res
+        if self.structure:
+            if type(self.structure) is not dict:
+                res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
+        return res
+
+    @property
+    def id(self):
+        return self.schema_id
+
     def __init__(self, schema_id=None, description=None, repository_id=None, is_active=None, insert_date=None,
                  last_update=None, structure=None, ):
         self.schema_id = schema_id
         self.description = description
-        self.repository_id = schema_id
+        self.repository_id = repository_id
         self.is_active = is_active
         self.insert_date = insert_date
         self.last_update = last_update
         # assuming it's a dict.
         if structure:
-            if type(structure) == _Fields.__class__:
-                self.structure = structure
-        elif type(structure) is dict:
             self.structure = _Fields(fields=[_Field(**f) for f in structure['fields']])
-        else:
-            raise Exception('The field structure as an unknown type, only _Fields and dict are allowed.')
+            # print "init %s" % type(structure)
+            # if type(structure) == _Fields.__class__:
+            #     self.structure = structure
+            # elif type(structure) is dict:
+            #
+            # else:
+            #     raise Exception('The field structure as an unknown type, only _Fields and dict are allowed.')
 
 
 class _SortField(ChinoBaseObject):
