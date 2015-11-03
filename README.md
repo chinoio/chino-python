@@ -131,7 +131,7 @@ In case of `list` it reutrns a ListeResult, which is composed of:
     - count
     - total_count
     - limit
-- <name of the object in plural>: such as `documents` that contains the list of objects
+- `name of the object in plural`: such as `documents` that contains the list of objects
 
 **all the objects, execpt Blob and BlobDetail have a method to be transformed into a `dict` -> `.to_dict()` and to the the id `.id`**
 
