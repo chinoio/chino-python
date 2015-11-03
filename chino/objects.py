@@ -18,7 +18,8 @@ class ChinoBaseObject(object):
                           sort_keys=True, indent=4)
 
     def to_dict(self):
-        return self.__dict__
+        # make a copy here
+        return dict(self.__dict__)
 
     def __str__(self):
         # return str(self.to_dict())
@@ -269,19 +270,10 @@ class _Field(ChinoBaseObject):
         return '-'
 
 
-class _Fields(object):
+class _Fields(ChinoBaseObject):
+
     def __init__(self, fields):
         self.fields = fields
-
-    @property
-    def id(self):
-        return NotImplemented
-
-    def __str__(self):
-        return "%s" % self.fields
-
-    def __repr__(self):
-        return "%s" % self.fields
 
 
 class Schema(ChinoBaseObject):
@@ -336,11 +328,13 @@ class Schema(ChinoBaseObject):
 
     def to_dict(self):
         res = super(Schema, self).to_dict()
-        # print res
-        if self.structure:
-            if type(self.structure) is not dict:
-                res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
+        res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
         return res
+    #     # print res
+    #     if self.structure:
+    #         if type(self.structure) is not dict:
+    #             res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
+    #     return res
 
     @property
     def id(self):
