@@ -48,7 +48,7 @@ master_doc = 'index'
 project = u'CHINO.io Python client'
 copyright = u'2015, Stefano Tranquillini <stefano@chino.io>'
 
-# The version info for the project you're documenting, acts as replacement for
+# The version current for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #

@@ -24,99 +24,116 @@ this will give you access to the methods:
     
     
 ### AUTH
+Class that manages the auth, `chino.auth`
 
-- /auth/login `auth_user_login`. *Note* this overrides the auth, when called (if successful,the auth is set for the user)
-- /auth/info `auth_user_status`
-- /auth/logout `auth_user_logout`
+**In 99% of the cases this class does not need to be used.**
+- `init`:
+    - `customer_id` mandatory
+    - `customer_key` optional
+    - `access_token` optional
+    - **NOTE:  if `customer_key` is set, it auth as admin, if `access_token` is set, then auth as customer. Admin has precedence in case both are set**
 - `set_auth_admin` to set the auth as admin
 - `set_auth_user` to set the auth as the user
+- `get_auth` to get the Auth object
+
 
 ### User
+Class to manage the user, `chino.users`
 
-- /users `user_list`
-- /users `user_detail`
-- /users/{user_id} `user_create`
-- /users/{user_id} `user_update`
-- /users/{user_id} `user_delete`
+- `login`:
+- `current`
+- `logout`
+- `list`
+- `detail`
+- `create`
+- `update`
+- `delete`
 
 ### Group
+`chino.groups`
 
-- /groups `group_list`
-- /groups `group_create`
-- /groups/{group_id} `group_detail`
-- /groups/{group_id} `group_update`
-- /groups/{group_id} `group_delete`
-- /groups/{group_id}/users/{user_id} `group_add_user`
-- /groups/{group_id}/users/{user_id} `group_del_user`
+- `list`
+- `detail`
+- `create`
+- `update`
+- `delete`
+- `add_user`
+- `del_user`
 
 ### Permission
+`chino.permissions`
 
-- /perms/users/{user_id} `permission_user`
-- /perms/schema/{schema_id}/users/{user_id} `permission_create_user`
-- /perms/schema/{schema_id}/users/{user_id} `permission_delete_user`
-- /perms/groups/{group_id} `permission_group`
-- /perms/schemas/{schema_id} `permission_schema`
-- /perms/schema/{schema_id}/groups/{group_id} `permission_create_group`
-- /perms/schema/{schema_id}/groups/{group_id} `permission_delete_group`
+**Note: to be tested**
+
+- `user`
+- `create_user`
+- `delete_user`
+- `group`
+- `schemas`
+- `create_group`
+- `delete_group`
 
 ### Repository
+`chino.repotiories`
 
-- /repositories `repository_list`
-- /repositories `repository_create`
-- /repositories/{repository_id} `repository_detail`
-- /repositories/{repository_id} `repository_update`
-- /repositories/{repository_id} `repository_delete`
+- `list`
+- `detail`
+- `create`
+- `update`
+- `delete`
 
 ### Schemas
+`chino.schemas`
 
-- /repositories/{repository_id}/schemas `schemas_list`
-- /repositories/{repository_id}/schemas `schema_create`
-- /schemas/{schema_id} `schema_detail`
-- /schemas/{schema_id} `schema_update`
-- /schemas/{schema_id} `schema_delete`
+- `list`
+- `create`
+- `detail`
+- `update`
+- `delete`
 
 ### Document
+`chino.documents`
 
-- /schemas/{schema_id}/documents `documents_list`
-- /schemas/{schema_id}/documents `document_create`
-- /documents/{document_id} `document_detail`
-- /documents/{document_id} `document_update`
-- /documents/{document_id} `document_delete`
+- `list`
+- `create`
+- `detail`
+- `update`
+- `delete`
+
 
 ### BLOB
+`chino.blobs`
 
-- /blobs `blob_start`
-- /blobs `blob_chunk`
-- /blobs/commit `blob_commit`
-- /blobs/{blob_id} `blob_detail` (returns a dict with `filename` and `blob`)
-- /blobs/{blob_id} `blob_delete`
-- `blob_send` help function to upload a file
+- `send`: help function to upload a blob, returns `BlobDetail('bytes', 'blob_id', 'sha1', 'document_id', 'md5')`
+- `start`
+- `chunk`
+- `commit`
+- `detail`: returns `Blob(filename, content)``
+- `delete`
+
 
 ### SEARCH
+`chino.searches`
 
-- /search/{schema_id} `search`
+**Note: to be tested**
 
+- `search`
+
+### OTHER
 *Plus methods that are utils for auth and to manage communications*
 
 ##Note:
 
-The calls returns the dict (as explained in the doc) for correct calls or raise an Exception if there's an error. Thus, you can catch the exception in the code if something bad happens.
+The calls returns Objects (see object.py) of the type of the call (e.g. documents return Documents) or raise an Exception if there's an error. Thus, you can catch the exception in the code if something bad happens.
+In case of `list` it reutrns a ListeResult, which is composed of:
+- paging
+    - offest
+    - count
+    - total_count
+    - limit
+- <name of the object in plural>: such as `documents` that contains the list of objects
 
-
-Create methods have the required parameters, e.g.:
-
-`document_create(self, schema_id, content, insert_user=None):`
-
-Update methods accept arbitrary parameters (but check the docs otherwise there will be an error from the server):
-
-`document_update(self, document_id, **kwargs):`
-
-This means that, for example, the `document_update` can be called as: 
-
-- `document_update(<id_doc>,content=dict(...))` 
-- `document_update(<id_doc>,description='...')` 
-- or with both
-
+**all the objects, execpt Blob and BlobDetail have a method to be transformed into a `dict` -> `.to_dict()` and to the the id `.id`**
 
 ## Requirements ##
 - requests (already in requirements.txt)
@@ -134,13 +151,7 @@ requires the following package (via pip)
 Beta
 
 ##TODO:
-- TEST
-- Write 
-
-### for the next relase
-We can have Objects with fields to access value and functions. E.g., `r = Reposity(id)` will have `r.description` but also `r.schemas()` which gives all the schemas of that repository.
-
-For doing so we need to create an initial layer where user can create repositories, search and so on, and then all the objects.
+- Finish the test, 81% covered
 
 
 #BUILD AND USAGE

@@ -1,7 +1,8 @@
 _build
 cfg.py
-tests_chino.py
 Chino_API_Python_.egg-info
 build
 chino.egg-info
 dist
+.coverage
+outlogo.png
