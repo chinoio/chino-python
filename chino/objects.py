@@ -1,5 +1,5 @@
-from collections import namedtuple
 import json
+from collections import namedtuple
 
 __author__ = 'Stefano Tranquillini <stefano.tranquillini@gmail.com>'
 
@@ -31,11 +31,12 @@ class ChinoBaseObject(object):
 
 
 class Paging(ChinoBaseObject):
-    def __init__(self, offset=0, limit=100, count=None):
+    def __init__(self, offset=0, limit=100, total_count=-1, count=-1):
         super(Paging, self).__init__()
         self.offset = offset
         self.limit = limit
         self.count = count
+        self.total_count = total_count
 
     def as_map(self):
         return {
@@ -49,7 +50,7 @@ class Paging(ChinoBaseObject):
 
 class ListResult(ChinoBaseObject):
     def __init__(self, class_obj, result):
-        self.paging = Paging(result['offset'], result['limit'], result['count'])
+        self.paging = Paging(result['offset'], result['limit'], result['count'], result['total_count'])
         results = []
         for r in result[class_obj.__str_names__]:
             results.append(class_obj(**r))
@@ -237,23 +238,24 @@ class Document(ChinoBaseObject):
     __str_name__ = 'document'
     __str_names__ = 'documents'
 
-    document_id = None
-    repository_id = None
-    schema_id = None
-    insert_date = None
-    last_update = None
-
     @property
     def id(self):
         return self.document_id
 
+    def to_dict(self):
+        res = super(Document, self).to_dict()
+        if self.content:
+            res['content'] = self.content.to_dict()
+        return res
+
     def __init__(self, document_id=None, repository_id=None, schema_id=None, insert_date=None, last_update=True,
-                 content=None):
+                 content=None, is_active=False):
         self.document_id = document_id
         self.repository_id = repository_id
         self.schema_id = schema_id
         self.insert_date = insert_date
         self.last_update = last_update
+        self.is_active = is_active
         self.content = _DictContent(**content) if content else None
 
 
@@ -271,7 +273,6 @@ class _Field(ChinoBaseObject):
 
 
 class _Fields(ChinoBaseObject):
-
     def __init__(self, fields):
         self.fields = fields
 
@@ -330,6 +331,7 @@ class Schema(ChinoBaseObject):
         res = super(Schema, self).to_dict()
         res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
         return res
+
     #     # print res
     #     if self.structure:
     #         if type(self.structure) is not dict:
@@ -510,3 +512,7 @@ class Permission(ChinoBaseObject):
         if self.permission:
             res['permission'] = [p.to_dict() for p in self.permission]
         return res
+
+
+Blob = namedtuple('Blob', ['filename', 'content'])
+BlobDetail = namedtuple('BlobDetail', ['bytes', 'blob_id', 'sha1', 'document_id', 'md5'])

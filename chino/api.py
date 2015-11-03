@@ -13,11 +13,10 @@ import json
 import os
 
 import requests
-
 from requests.auth import HTTPBasicAuth
 
 from chino.exceptions import MethodNotSupported, CallError, CallFail, ClientError
-from chino.objects import Repository, ListResult, User, Group, Schema
+from chino.objects import Repository, ListResult, User, Group, Schema, Document, Blob, BlobDetail
 
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
@@ -26,7 +25,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class ChinoAPIBase(object): #PRAGMA: NO COVER
+class ChinoAPIBase(object):  # PRAGMA: NO COVER
     '''
         Base class, contains the utils methods to call the APIs
     '''
@@ -50,13 +49,13 @@ class ChinoAPIBase(object): #PRAGMA: NO COVER
         url = self._url + url
         # logger.debug("calling %s %s p(%s) d(%s)" % (method, url, params, data))
         if method == 'GET':
-            res = self.__apicall_get(url, params)
+            res = self._apicall_get(url, params)
         elif method == 'POST':
-            res = self.__apicall_post(url, data)
+            res = self._apicall_post(url, data)
         elif method == 'PUT':
-            res = self.__apicall_put(url, data)
+            res = self._apicall_put(url, data)
         elif method == 'DELETE':
-            res = self.__apicall_delete(url, params)
+            res = self._apicall_delete(url, params)
         else:
             raise MethodNotSupported
         self.valid_call(res)
@@ -68,31 +67,31 @@ class ChinoAPIBase(object): #PRAGMA: NO COVER
             # emtpy response without errors, return True
             return True
 
-    def __apicall_put(self, url, data):
+    def _apicall_put(self, url, data):
         if hasattr(data, 'to_dict()'):
             d = data.to_dict()
         else:
             d = data
-        r = requests.put(url, auth=self.__get_auth(), data=json.dumps(d))
+        r = requests.put(url, auth=self._get_auth(), data=json.dumps(d))
         return r
 
-    def __apicall_post(self, url, data):
+    def _apicall_post(self, url, data):
         if hasattr(data, 'to_dict()'):
             d = data.to_dict()
         else:
             d = data
-        r = requests.post(url, auth=self.__get_auth(), data=json.dumps(d))
+        r = requests.post(url, auth=self._get_auth(), data=json.dumps(d))
         return r
 
-    def __apicall_get(self, url, params):
-        r = requests.get(url, auth=self.__get_auth(), params=params)
+    def _apicall_get(self, url, params):
+        r = requests.get(url, auth=self._get_auth(), params=params)
         return r
 
-    def __apicall_delete(self, url, params):
-        r = requests.delete(url, auth=self.__get_auth(), params=params)
+    def _apicall_delete(self, url, params):
+        r = requests.delete(url, auth=self._get_auth(), params=params)
         return r
 
-    def __get_auth(self):
+    def _get_auth(self):
         return self.auth.get_auth()
 
     @staticmethod
@@ -162,7 +161,7 @@ class ChinoAPIUsers(ChinoAPIBase):
 
     def update(self, user_id, **kwargs):
         url = "users/%s" % user_id
-        u_updated=self.apicall('PUT', url, data=kwargs)['user']
+        u_updated = self.apicall('PUT', url, data=kwargs)['user']
         return User(**u_updated)
 
     def delete(self, user_id, force=False):
@@ -323,7 +322,7 @@ class ChinoAPISchemas(ChinoAPIBase):
         :return: dict containing ``count``,``total_count``,``limit``,``offset``,``repositories``
         """
         url = "repositories/%s/schemas" % repository_id
-        return ListResult(Schema,self.apicall('GET', url, params=pars))
+        return ListResult(Schema, self.apicall('GET', url, params=pars))
 
     def create(self, repository, description, fields):
         """
@@ -367,23 +366,21 @@ class ChinoAPIDocuments(ChinoAPIBase):
 
     def list(self, schema_id, **pars):
         url = "schemas/%s/documents" % schema_id
-        return self.apicall('GET', url, params=pars)
+        return ListResult(Document, self.apicall('GET', url, params=pars))
 
-    def create(self, schema_id, content, insert_user=None):
+    def create(self, schema_id, content):
         data = dict(content=content)
-        if insert_user:
-            data['insert_user'] = insert_user
         url = "schemas/%s/documents" % schema_id
-        return self.apicall('POST', url, data=data)['document']
+        return Document(**self.apicall('POST', url, data=data)['document'])
 
     def detail(self, document_id):
         url = "documents/%s" % document_id
-        return self.apicall('GET', url)['document']
+        return Document(**self.apicall('GET', url)['document'])
 
     def update(self, document_id, **kwargs):
         # data = dict(content=content)
         url = "documents/%s" % document_id
-        return self.apicall('PUT', url, data=kwargs)['document']
+        return Document(**self.apicall('PUT', url, data=kwargs)['document'])
 
     def delete(self, document_id, force=False):
         url = "documents/%s" % document_id
@@ -440,7 +437,7 @@ class ChinoAPIBlobs(ChinoAPIBase):
         commit = self.commit(upload_id)
         if sha1.hexdigest() != commit['sha1']:
             raise CallFail(500, 'The file was not uploaded correctly')
-        return commit
+        return BlobDetail(**commit)
 
     def start(self, document_id, field, field_name):
         url = 'blobs'
@@ -461,9 +458,9 @@ class ChinoAPIBlobs(ChinoAPIBase):
         # NOTE: this calls directly the function. needed to get the headers
         url = self._url + 'blobs/%s' % blob_id
         # this is different
-        res = self.__apicall_get(url, None)
+        res = self._apicall_get(url, None)
         fname = res.headers['Content-Disposition'].split(';')[1].split('=')[1]
-        return dict(filename=fname, blob=res.content)
+        return Blob(filename=fname, content=res.content)
 
     def delete(self, blob_id):
         url = 'blobs/%s' % blob_id

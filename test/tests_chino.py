@@ -8,6 +8,7 @@ __author__ = 'Stefano Tranquillini <stefano.tranquillini@gmail.com>'
 import unittest
 import logging
 import logging.config
+import hashlib
 
 
 # logging.basicConfig(stream=sys.stderr)
@@ -38,7 +39,7 @@ class BaseChinoTest(unittest.TestCase):
                 self.logger.error("ERROR: Key missing  %s" % key)
                 return False
             v2 = d2[key]
-            if type(v2) is _DictContent:
+            if type(v2) is _DictContent and value:
                 if not self._equals(value.to_dict(), v2.to_dict()):
                     return False
             else:
@@ -80,19 +81,18 @@ class UserChinoTest(BaseChinoTest):
         for user in list.users:
             self.chino.users.delete(user.id, force=True)
 
-    def test_user_list(self):
+    def test_list(self):
         list = self.chino.users.list()
         self.assertIsNotNone(list.paging)
         self.assertIsNotNone(list.users)
 
-    def test_user_CRUD(self):
+    def test_CRUD(self):
         NAME = 'test.user'
         EDIT = NAME + '.edited'
         user = self.chino.users.create(username=NAME, password='12345678',
                                        attributes=dict(first_name='john', last_name='doe',
                                                        email='test@chino.io'))
         self.user = user
-        print type(user.attributes)
         self.assertIsNotNone(user)
         self.assertEqual(user.username, NAME)
         list = self.chino.users.list()
@@ -104,9 +104,6 @@ class UserChinoTest(BaseChinoTest):
 
         ste_2 = self.chino.users.update(**user.to_dict())
         self.logger.debug(ste_2)
-
-        print user.to_dict()
-        print type(user.attributes)
         self.assertEqual(user.id, ste_2.id)
         self.assertEqual(ste_2.username, EDIT)
 
@@ -143,12 +140,12 @@ class GroupChinoTest(BaseChinoTest):
         for group in list.groups:
             self.chino.groups.delete(group.id, force=True)
 
-    def test_group_list(self):
+    def test_list(self):
         list = self.chino.groups.list()
         self.assertIsNotNone(list.paging)
         self.assertIsNotNone(list.groups)
 
-    def test_group_CRUD(self):
+    def test_CRUD(self):
         group_created = self.chino.groups.create('testing', attributes=dict(hospital='test'))
         self.assertTrue(self._equals(group_created.attributes.to_dict(), dict(hospital='test')))
         self.assertEqual(group_created.groupname, 'testing')
@@ -201,11 +198,13 @@ class RepositoryChinoTest(BaseChinoTest):
         self.assertTrue(
             self._equals(created.to_dict(), first.to_dict()), "\n %s \n %s \n" % (created.to_json(), first.to_json()))
         first.description = 'edited'
-        resp = self.chino.repositories.update(first.id, description=first.description)
-        self.assertTrue(
-            self._equals(resp.to_dict(), first.to_dict()), "\n %s \n %s \n" % (resp.to_json(), first.to_json()))
 
-        self.chino.repositories.delete(first.id, force=True)
+        resp = self.chino.repositories.update(first.id, description=first.description)
+        detail = self.chino.repositories.detail(first.id)
+        self.assertTrue(
+            self._equals(resp.to_dict(), detail.to_dict()), "\n %s \n %s \n" % (resp.to_json(), detail.to_json()))
+
+        self.chino.repositories.delete(first.id)
 
 
 class SchemaChinoTest(BaseChinoTest):
@@ -232,22 +231,105 @@ class SchemaChinoTest(BaseChinoTest):
         list = self.chino.schemas.list(self.repo)
         detail = self.chino.schemas.detail(list.schemas[0].id)
         detail2 = self.chino.schemas.detail(created.id)
-        print "%s %s" % (type(detail),type(detail.structure))
-        # perche' diventa list?
-        detail.to_dict()
-        print "%s %s" % (type(detail),type(detail.structure))
+        self.assertTrue(
+            self._equals(detail.to_dict(), detail2.to_dict()), "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+
         detail.structure.fields.append(_Field('string', 'new one'))
         self.chino.schemas.update(**detail.to_dict())
-        # first = self.chino.repositories.list().repositories[0]
-        # self.assertTrue(
-        #     self._equals(created.to_dict(), first.to_dict()), "\n %s \n %s \n" % (created.to_json(), first.to_json()))
-        # first.description = 'edited'
-        # resp = self.chino.repositories.update(first.id, description=first.description)
-        # self.assertTrue(
-        #     self._equals(resp.to_dict(), first.to_dict()), "\n %s \n %s \n" % (resp.to_json(), first.to_json()))
-        #
-        # self.chino.repositories.delete(first.id, force=True)
+        detail2 = self.chino.schemas.detail(detail.id)
+        self.assertTrue(
+            self._equals(detail.to_dict(), detail2.to_dict()), "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+        self.chino.schemas.delete(detail.id)
 
+
+class DocumentChinoTest(BaseChinoTest):
+    def setUp(self):
+        super(DocumentChinoTest, self).setUp()
+        self.repo = self.chino.repositories.create('test').id
+        fields = [dict(name='fieldInt', type='integer'), dict(name='fieldString', type='string'),
+                  dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
+                  dict(name='fieldDateTime', type='datetime')]
+        self.schema = self.chino.schemas.create(self.repo, 'test', fields).id
+
+    def tearDown(self):
+        list = self.chino.documents.list(self.schema)
+        for doc in list.documents:
+            self.chino.documents.delete(doc.id, force=True)
+        self.chino.schemas.delete(self.schema, True)
+        self.chino.repositories.delete(self.repo, True)
+
+    def test_list(self):
+        list = self.chino.documents.list(self.schema)
+        self.assertIsNotNone(list.paging)
+        self.assertIsNotNone(list.documents)
+
+    def test_crud(self):
+        content = dict(fieldInt='123', fieldString='test', fieldBool=False, fieldDate='2015-02-19',
+                       fieldDateTime='2015-02-19 16:39:47')
+        document = self.chino.documents.create(self.schema, content=content)
+        # get the last
+        document_det = self.chino.documents.detail(document.id)
+        self.assertEqual(document.last_update, document_det.last_update)
+        content = dict(fieldInt='123',
+                       fieldString='test', fieldBool=False, fieldDate='2015-02-19',
+                       fieldDateTime='2015-02-19 16:39:47')
+        self.chino.documents.update(document.id, content=content)
+        document = self.chino.documents.detail(document.id)
+        self.assertEqual(123, document.content.fieldInt)
+        self.chino.documents.update(document.id,
+                                    content=dict(fieldInt=349, fieldString='test', fieldBool=False,
+                                                 fieldDate='2015-02-19',
+                                                 fieldDateTime='2015-02-19 16:39:47'))
+        document = self.chino.documents.detail(document.id)
+        self.assertEqual(349, document.content.fieldInt)
+        self.chino.documents.delete(document.id)
+
+        fields = [dict(name='fieldInt', type='integer'), dict(name='fieldString', type='string'),
+                  dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
+                  dict(name='fieldDateTime', type='datetime')]
+        created = self.chino.schemas.create(self.repo, 'test', fields)
+        list = self.chino.schemas.list(self.repo)
+        detail = self.chino.schemas.detail(list.schemas[0].id)
+        detail2 = self.chino.schemas.detail(created.id)
+        self.assertTrue(
+            self._equals(detail.to_dict(), detail2.to_dict()), "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+
+        detail.structure.fields.append(_Field('string', 'new one'))
+        self.chino.schemas.update(**detail.to_dict())
+        detail2 = self.chino.schemas.detail(detail.id)
+        self.assertTrue(
+            self._equals(detail.to_dict(), detail2.to_dict()), "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+        self.chino.schemas.delete(detail.id)
+
+
+class BlobChinoTest(BaseChinoTest):
+    def setUp(self):
+        super(BlobChinoTest, self).setUp()
+        self.repo = self.chino.repositories.create('test').id
+        fields = [dict(name='blobTest', type='blob'), dict(name='name', type='string')]
+        self.schema = self.chino.schemas.create(self.repo, 'test', fields).id
+
+    def tearDown(self):
+        self.chino.blobs.delete(self.blob.blob_id)
+        self.chino.documents.delete(self.document.id, True)
+        self.chino.schemas.delete(self.schema, True)
+        self.chino.repositories.delete(self.repo, True)
+
+    def test_blob(self):
+        self.document = self.chino.documents.create(self.schema, content=dict(name='test'))
+
+        blob = self.chino.blobs.send(self.document.id, 'blobTest', 'test/logo.png')
+
+        blob_detail = self.chino.blobs.detail(blob.blob_id)
+        rw = open("test/out" + blob_detail.filename, "wb")
+        rw.write(blob_detail.content)
+        rw.close()
+        # rd = open('test/logo.png', "rb")
+        md5_detail = hashlib.md5()
+        md5_detail.update(blob_detail.content)
+        # self.assertEqual(md5_detail.digest(), md5_original.digest())
+        self.assertEqual(md5_detail.hexdigest(), blob.md5)
+        self.blob = blob
 
         # /
         #
@@ -309,26 +391,7 @@ class SchemaChinoTest(BaseChinoTest):
         #     # print s.to_dict()
         #
         #
-        # def test_blob(self):
-        #     pass
-        #     ## create blob
-        #     # repository = self.chino.repository_create('test-blob')
-        #     # fields = [dict(name='testFile', type='blob'), dict(name='name', type='string')]
-        #     # schema = self.chino.schema_create(repository['repository_id'], 'test_schema_blob', fields)
-        #     # document = self.chino.document_create(schema['schema_id'], content=dict(name='test'))
-        #     # document=dict(document_id = 'd4a94a7f-ef33-4383-8599-f6d96f4ee6ad')
-        #     #
-        #     # blob = self.chino.blob_send(document['document_id'], fields[0]['name'], 'test/logo.png')
-        #     # print blob
-        #
-        #     ## document = self.chino.document_detail('d4a94a7f-ef33-4383-8599-f6d96f4ee6ad')
-        #     # print document
-        #     # store blob
-        #     # blob = self.chino.blob_detail(document['content']['testFile'])
-        #     # print blob
-        #     # rw = open("test/out"+blob['filename'], "wb")
-        #     # rw.write(blob['blob'])
-        #     # rw.close()
+
         #
         #     #
         #     # def test_creation(self):

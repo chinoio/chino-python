@@ -5,3 +5,4 @@ build
 chino.egg-info
 dist
 .coverage
+outlogo.png
