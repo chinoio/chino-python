@@ -185,7 +185,7 @@ class ChinoAPIGroups(ChinoAPIBase):
         url = "groups/%s" % group_id
         return Group(**self.apicall('GET', url)['group'])
 
-    def create(self, groupname, attributes):
+    def create(self, groupname, attributes=None):
         data = dict(groupname=groupname, attributes=attributes)
         url = "groups"
         return Group(**self.apicall('POST', url, data=data)['group'])
@@ -221,9 +221,9 @@ class ChinoAPIPermissions(ChinoAPIBase):
         return self.apicall('GET', url)
 
     def create_user(self, schema_id, user_id, own_data, all_data, insert=True):
-        data = dict(own_data=own_data, all_data=all_data, insert=insert)
+        data = dict(permissions=dict(own_data=own_data, all_data=all_data, insert=insert))
         url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
-        return self.apicall('POST', url, data)
+        return self.apicall('POST', url, data=data)
 
     def delete_user(self, schema_id, user_id):
         url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
@@ -238,9 +238,9 @@ class ChinoAPIPermissions(ChinoAPIBase):
         return self.apicall('GET', url)
 
     def create_group(self, schema_id, group_id, own_data, all_data, insert=True):
-        data = dict(own_data=own_data, all_data=all_data, insert=insert)
+        data = dict(permissions=dict(own_data=own_data, all_data=all_data, insert=insert))
         url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
-        return self.apicall('POST', url, data)
+        return self.apicall('POST', url, data=data)
 
     def delete_group(self, schema_id, group_id):
         url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
