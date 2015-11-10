@@ -101,8 +101,12 @@ class UserChinoTest(BaseChinoTest):
         self.assertEqual(ste_2.username, NAME)
 
         user.username = EDIT
-
-        ste_2 = self.chino.users.update(**user.to_dict())
+        # remove extra params
+        data = user.to_dict()
+        del data['insert_date']
+        del data['last_update']
+        del data['groups']
+        ste_2 = self.chino.users.update(**data)
         self.logger.debug(ste_2)
         self.assertEqual(user.id, ste_2.id)
         self.assertEqual(ste_2.username, EDIT)
@@ -157,7 +161,11 @@ class GroupChinoTest(BaseChinoTest):
         # print details.to_dict()
         self.assertTrue(self._equals(details, group), "\n %s \n %s \n" % (details.to_json(), group.to_json()))
         group.groupname = 'updatedtesting'
-        self.chino.groups.update(**group.to_dict())
+        # remove extra params
+        data = group.to_dict()
+        del data['insert_date']
+        del data['last_update']
+        self.chino.groups.update(**data)
         details = self.chino.groups.detail(group.id)
         self.assertTrue(self._equals(details, group), "\n %s \n %s \n" % (details.to_json(), group.to_json()))
         self.chino.groups.delete(details.id)
@@ -235,7 +243,11 @@ class SchemaChinoTest(BaseChinoTest):
             self._equals(detail.to_dict(), detail2.to_dict()), "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
 
         detail.structure.fields.append(_Field('string', 'new one'))
-        self.chino.schemas.update(**detail.to_dict())
+        data = detail.to_dict()
+        del data['repository_id']
+        del data['insert_date']
+        del data['last_update']
+        self.chino.schemas.update(**data)
         detail2 = self.chino.schemas.detail(detail.id)
         self.assertTrue(
             self._equals(detail.to_dict(), detail2.to_dict()), "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
@@ -295,7 +307,12 @@ class DocumentChinoTest(BaseChinoTest):
             self._equals(detail.to_dict(), detail2.to_dict()), "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
 
         detail.structure.fields.append(_Field('string', 'new one'))
-        self.chino.schemas.update(**detail.to_dict())
+        # delete repository_id
+        data = detail.to_dict()
+        del data['repository_id']
+        del data['insert_date']
+        del data['last_update']
+        self.chino.schemas.update(**data)
         detail2 = self.chino.schemas.detail(detail.id)
         self.assertTrue(
             self._equals(detail.to_dict(), detail2.to_dict()), "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))

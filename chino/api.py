@@ -303,7 +303,7 @@ class ChinoAPIRepositories(ChinoAPIBase):
         """
         url = "repositories/%s" % repository_id
         if force:
-            params = dict(force=True)
+            params = dict(force='true')
         else:
             params = None
         return self.apicall('DELETE', url, params)
