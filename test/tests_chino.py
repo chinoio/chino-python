@@ -331,6 +331,37 @@ class BlobChinoTest(BaseChinoTest):
         self.assertEqual(md5_detail.hexdigest(), blob.md5)
         self.blob = blob
 
+
+class SearchChinoTest(BaseChinoTest):
+     pass
+
+class PermissionChinoTest(BaseChinoTest):
+    def setUp(self):
+        super(PermissionChinoTest, self).setUp()
+        self.user = self.chino.users.create(username='ste', password='12345678',
+                                       attributes=dict(first_name='john', last_name='doe',
+                                                       email='test@chino.io'))
+        self.group = self.chino.groups.create('testing', attributes=dict(hospital='test'))
+
+        fields = [dict(name='fieldInt', type='integer'), dict(name='fieldString', type='string'),
+                  dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
+                  dict(name='fieldDateTime', type='datetime')]
+        self.repo = self.chino.repositories.create('test').id
+        self.schema = self.chino.schemas.create(self.repo, 'test', fields)
+
+
+    def tearDown(self):
+        self.chino.users.delete(self.user.id,True)
+        self.chino.groups.delete(self.group.id,True)
+        self.chino.schemas.delete(self.schema.id,True)
+        self.chino.repositories.delete(self.repo, True)
+
+    def test_all(self):
+        resp = self.chino.permissions.user(self.user.id)
+        print resp
+        self.chino.groups.add_user(self.group.id,self.user.id)
+        resp = self.chino.permissions.user(self.user.id)
+        print resp
         # /
         #
         # def test_user_and_auth(self):
