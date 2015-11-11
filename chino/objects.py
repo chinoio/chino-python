@@ -10,7 +10,7 @@ class ChinoBaseObject(object):
 
     @property
     def id(self):
-        raise NotImplementedError()
+        raise '-'
 
     def to_json(self):
         # raise NotImplementedError()
@@ -260,9 +260,10 @@ class Document(ChinoBaseObject):
 
 
 class _Field(ChinoBaseObject):
-    def __init__(self, type, name):
+    def __init__(self, type, name, indexed=False):
         self.type = type
         self.name = name
+        self.indexed = indexed
 
     __str_name__ = 'field'
     __str_names__ = 'fields'
