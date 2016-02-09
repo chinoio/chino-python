@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 '''
 client for Chino.io API
 ~~~~~~~~~~~~~~~~~~~~~
@@ -16,11 +15,11 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from chino.exceptions import MethodNotSupported, CallError, CallFail, ClientError
-from chino.objects import Repository, ListResult, User, Group, Schema, Document, Blob, BlobDetail
+from chino.objects import Repository, ListResult, User, Group, Schema, Document, Blob, BlobDetail, UserSchema, \
+    Collection, Permission
+import logging
 
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
     def apicall(self, method, url, params=None, data=None):
         method = method.upper()
         url = self._url + url
-        # logger.debug("calling %s %s p(%s) d(%s)" % (method, url, params, data))
+        logger.debug("calling %s %s p(%s) d(%s) " % (method, url, params, data))
         if method == 'GET':
             res = self._apicall_get(url, params)
         elif method == 'POST':
@@ -154,9 +153,9 @@ class ChinoAPIUsers(ChinoAPIBase):
         url = "users/%s" % user_id
         return User(**self.apicall('GET', url)['user'])
 
-    def create(self, username, password, attributes=None):
+    def create(self, user_schema, username, password, attributes=None):
         data = dict(username=username, password=password, attributes=attributes, )
-        url = "users"
+        url = "user_schemas/%s/users" % user_schema
         return User(**self.apicall('POST', url, data=data)['user'])
 
     def update(self, user_id, **kwargs):
@@ -216,35 +215,113 @@ class ChinoAPIPermissions(ChinoAPIBase):
     def __init__(self, auth, url):
         super(ChinoAPIPermissions, self).__init__(auth, url)
 
-    def user(self, user_id):
+    def resources(self, action, resource_type, subject_type, subject_id, manage=None, authorize=None):
+        url = "perms/%s/%s/%s/%s" % (action, resource_type, subject_type, subject_id)
+        data = dict()
+        if manage:
+            data['manage'] = manage
+        if authorize:
+            data['authorize'] = authorize
+        return self.apicall('POST', url, data=data)
+
+    def resource(self, action, resource_type, resource_id, subject_type, subject_id,
+                   manage=None, authorize=None):
+        url = "perms/%s/%s/%s/%s/%s" % (action, resource_type, resource_id, subject_type, subject_id)
+        data = dict()
+        if manage:
+            data['manage'] = manage
+        if authorize:
+            data['authorize'] = authorize
+        return self.apicall('POST', url, data=data)
+
+    def resource_children(self, action, resource_type, resource_id, resource_child_type, subject_type, subject_id,
+                          manage=None, authorize=None):
+        url = "perms/%s/%s/%s/%s/%s/%s" % (
+            action, resource_type, resource_id, resource_child_type, subject_type, subject_id)
+        data = dict()
+        if manage:
+            data['manage'] = manage
+        if authorize:
+            data['authorize'] = authorize
+        return self.apicall('POST', url, data=data)
+
+    def read_perms(self):
+        url = "perms"
+        res = self.apicall('GET', url)
+        return [Permission(**p) for p in res['permissions']]
+
+    def read_perms_document(self, document_id):
+        url = "perms/documents/%s" % document_id
+        return [Permission(**p) for p in self.apicall('GET', url)['permissions']]
+
+    def read_perms_user(self, user_id):
         url = "perms/users/%s" % user_id
-        return self.apicall('GET', url)
+        return [Permission(**p) for p in self.apicall('GET', url)['permissions']]
 
-    def create_user(self, schema_id, user_id, own_data, all_data, insert=True):
-        data = dict(permissions=dict(own_data=own_data, all_data=all_data, insert=insert))
-        url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
-        return self.apicall('POST', url, data=data)
-
-    def delete_user(self, schema_id, user_id):
-        url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
-        return self.apicall('DELETE', url)
-
-    def group(self, group_id):
+    def read_perms_group(self, group_id):
         url = "perms/groups/%s" % group_id
-        return self.apicall('GET', url)
+        return [Permission(**p) for p in self.apicall('GET', url)['permissions']]
 
-    def schema(self, schema_id):
-        url = "perms/schemas/%s" % schema_id
-        return self.apicall('GET', url)
+        # def user(self, user_id):
+        #     url = "perms/users/%s" % user_id
+        #     return self.apicall('GET', url)
+        #
+        # def create_user(self, schema_id, user_id, own_data, all_data, insert=True):
+        #     data = dict(permissions=dict(own_data=own_data, all_data=all_data, insert=insert))
+        #     url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
+        #     return self.apicall('POST', url, data=data)
+        #
+        # def delete_user(self, schema_id, user_id):
+        #     url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
+        #     return self.apicall('DELETE', url)
+        #
+        # def group(self, group_id):
+        #     url = "perms/groups/%s" % group_id
+        #     return self.apicall('GET', url)
+        #
+        # def schema(self, schema_id):
+        #     url = "perms/schemas/%s" % schema_id
+        #     return self.apicall('GET', url)
+        #
+        # def create_group(self, schema_id, group_id, own_data, all_data, insert=True):
+        #     data = dict(permissions=dict(own_data=own_data, all_data=all_data, insert=insert))
+        #     url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
+        #     return self.apicall('POST', url, data=data)
+        #
+        # def delete_group(self, schema_id, group_id):
+        #     url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
+        #     return self.apicall('DELETE', url)
 
-    def create_group(self, schema_id, group_id, own_data, all_data, insert=True):
-        data = dict(permissions=dict(own_data=own_data, all_data=all_data, insert=insert))
-        url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
-        return self.apicall('POST', url, data=data)
 
-    def delete_group(self, schema_id, group_id):
-        url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
-        return self.apicall('DELETE', url)
+        # def user(self, user_id):
+        #     url = "perms/users/%s" % user_id
+        #     return self.apicall('GET', url)
+        #
+        # def create_user(self, schema_id, user_id, own_data, all_data, insert=True):
+        #     data = dict(permissions=dict(own_data=own_data, all_data=all_data, insert=insert))
+        #     url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
+        #     return self.apicall('POST', url, data=data)
+        #
+        # def delete_user(self, schema_id, user_id):
+        #     url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
+        #     return self.apicall('DELETE', url)
+        #
+        # def group(self, group_id):
+        #     url = "perms/groups/%s" % group_id
+        #     return self.apicall('GET', url)
+        #
+        # def schema(self, schema_id):
+        #     url = "perms/schemas/%s" % schema_id
+        #     return self.apicall('GET', url)
+        #
+        # def create_group(self, schema_id, group_id, own_data, all_data, insert=True):
+        #     data = dict(permissions=dict(own_data=own_data, all_data=all_data, insert=insert))
+        #     url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
+        #     return self.apicall('POST', url, data=data)
+        #
+        # def delete_group(self, schema_id, group_id):
+        #     url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
+        #     return self.apicall('DELETE', url)
 
 
 class ChinoAPIRepositories(ChinoAPIBase):
@@ -392,6 +469,7 @@ class ChinoAPIDocuments(ChinoAPIBase):
 
 
 class ChinoAPIBlobs(ChinoAPIBase):
+    # TODO: update to new format
     def __init__(self, auth, url):
         super(ChinoAPIBlobs, self).__init__(auth, url)
 
@@ -496,8 +574,6 @@ class ChinoAuth(object):
         :param customer_id: mandatory
         :param customer_key: optional, if specified the auth is set as chino customer (admin)
         :param access_token: optional, if specified the auth is as user
-        :param version: default is `v1`, change if you know what to do
-        :param url: the url, this should be changed only for testing
         :return: the class
         '''
         self.customer_id = customer_id
@@ -520,11 +596,126 @@ class ChinoAuth(object):
         return self.__auth
 
 
+class ChinoAPIUserSchemas(ChinoAPIBase):
+    def __init__(self, auth, url):
+        super(ChinoAPIUserSchemas, self).__init__(auth, url)
+
+    def list(self, **pars):
+        """
+        Gets the list of UserSchemas
+
+        :param: usual for a list ``offset``, ``limit``
+        :return: dict containing ``count``,``total_count``,``limit``,``offset``,``repositories``
+        """
+        url = "user_schemas"
+        return ListResult(UserSchema, self.apicall('GET', url, params=pars))
+
+    def create(self, description, fields):
+        """
+        Creates a UserSchema
+
+        :param description: (str) the name of the schema
+        :param fields: list(dict) the list of fields
+        :return: (dict) the UserSchema.
+        """
+        data = dict(description=description, structure=dict(fields=fields))
+        url = "user_schemas"
+        return UserSchema(**self.apicall('POST', url, data=data)['user_schema'])
+
+    def detail(self, user_schema_id):
+        """
+        Details of a UserSchema
+
+        :param user_schema_id: (id) of the schema
+        :return: (dict) the schema.
+        """
+        url = "user_schemas/%s" % user_schema_id
+        return UserSchema(**self.apicall('GET', url)['user_schema'])
+
+    def update(self, user_schema_id, **kwargs):
+        """
+        Updates a UserSchema
+        :param user_schema_id:
+        :param kwargs:
+        :return:
+        """
+        url = "user_schemas/%s" % user_schema_id
+        return UserSchema(**self.apicall('PUT', url, data=kwargs)['user_schema'])
+
+    def delete(self, user_schema_id, force=False):
+        url = "user_schemas/%s" % user_schema_id
+        if force:
+            params = dict(force='true')
+        else:
+            params = None
+        return self.apicall('DELETE', url, params)
+
+
+class ChinoAPICollections(ChinoAPIBase):
+    def __init__(self, auth, url):
+        super(ChinoAPICollections, self).__init__(auth, url)
+
+    def list(self, **pars):
+        """
+        Gets the list of Collections
+
+        :param: usual for a list ``offset``, ``limit``
+        :return: dict containing ``count``,``total_count``,``limit``,``offset``,``repositories``
+        """
+        url = "collections"
+        return ListResult(Collection, self.apicall('GET', url, params=pars))
+
+    def create(self, name):
+        """
+        Creates a Collection
+
+        :param name: (str) the name of the collection
+        :return: (dict) the UserSchema.
+        """
+        data = dict(name=name)
+        url = "collections"
+        return Collection(**self.apicall('POST', url, data=data)['collection'])
+
+    def detail(self, collection_id):
+        """
+        Details of a Collection
+
+        :param collection_id: (id) of the Collection
+        :return: (dict) the Collection.
+        """
+        url = "collections/%s" % collection_id
+        return Collection(**self.apicall('GET', url)['collection'])
+
+    def update(self, collection_id, **kwargs):
+        url = "collections/%s" % collection_id
+        return Collection(**self.apicall('PUT', url, data=kwargs)['collection'])
+
+    def delete(self, collection_id, force=False):
+        url = "collections/%s" % collection_id
+        if force:
+            params = dict(force='true')
+        else:
+            params = None
+        return self.apicall('DELETE', url, params)
+
+    def list_documents(self, collection_id, **pars):
+        url = "collections/%s/documents" % collection_id
+        return ListResult(Document, self.apicall('GET', url, params=pars))
+
+    def add_document(self, collection_id, document_id):
+        url = "collections/%s/documents/%s" % (collection_id, document_id)
+        return self.apicall('POST', url)
+
+    def rm_document(self, collection_id, document_id):
+        url = "collections/%s/documents/%s" % (collection_id, document_id)
+        return self.apicall('DELETE', url)
+
+
 class ChinoAPIClient(object):
     """
     ChinoAPI the client class
     """
-
+    final_url = ""
     users = groups = permissions = repositories = schemas = documents = blobs = searches = None
 
     def __init__(self, customer_id, customer_key=None, customer_token=None, version='v1', url='https://api.chino.io/'):
@@ -541,6 +732,7 @@ class ChinoAPIClient(object):
 
         # smarter wayt o add slash?
         final_url = url + version + '/'
+        self.final_url = final_url
         auth = ChinoAuth(customer_id, customer_key, customer_token)
         self.auth = auth
         self.users = ChinoAPIUsers(auth, final_url)
@@ -548,6 +740,8 @@ class ChinoAPIClient(object):
         self.permissions = ChinoAPIPermissions(auth, final_url)
         self.repositories = ChinoAPIRepositories(auth, final_url)
         self.schemas = ChinoAPISchemas(auth, final_url)
+        self.user_schemas = ChinoAPIUserSchemas(auth, final_url)
+        self.collections = ChinoAPICollections(auth, final_url)
         self.documents = ChinoAPIDocuments(auth, final_url)
         self.blobs = ChinoAPIBlobs(auth, final_url)
         self.searches = ChinoAPISearches(auth, final_url)

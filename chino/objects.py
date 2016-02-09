@@ -157,12 +157,14 @@ class User(ChinoBaseObject):
                 res['attributes'] = self.attributes.to_dict()
         return res
 
-    def __init__(self, user_id=None, username=None, insert_date=None, last_update=None, is_active=None, attributes=None,
+    def __init__(self, user_id=None, username=None, insert_date=None, schema_id=None, last_update=None, is_active=None,
+                 attributes=None,
                  groups=None, password=None):
         self.username = username
         self.user_id = user_id
         self.insert_date = insert_date
         self.last_update = last_update
+        self.schema_id = schema_id
         self.is_active = is_active
         self.attributes = _DictContent(**attributes) if attributes else None
         self.groups = groups
@@ -260,10 +262,11 @@ class Document(ChinoBaseObject):
 
 
 class _Field(ChinoBaseObject):
-    def __init__(self, type, name, indexed=False):
+    def __init__(self, type, name, indexed=None):
         self.type = type
         self.name = name
-        self.indexed = indexed
+        if indexed:
+            self.indexed = indexed
 
     __str_name__ = 'field'
     __str_names__ = 'fields'
@@ -363,6 +366,152 @@ class Schema(ChinoBaseObject):
             #     raise Exception('The field structure as an unknown type, only _Fields and dict are allowed.')
 
 
+class UserSchema(ChinoBaseObject):
+    """
+    Similar to Schema
+    """
+    __str_name__ = 'user_schema'
+    __str_names__ = 'user_schemas'
+
+    def to_dict(self):
+        res = super(UserSchema, self).to_dict()
+        res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
+        return res
+
+    #     # print res
+    #     if self.structure:
+    #         if type(self.structure) is not dict:
+    #             res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
+    #     return res
+
+    @property
+    def id(self):
+        return self.user_schema_id
+
+    def __init__(self, user_schema_id=None, description=None, is_active=None, insert_date=None,
+                 last_update=None, structure=None, groups=None):
+        self.user_schema_id = user_schema_id
+        self.description = description
+        self.groups = groups
+        self.is_active = is_active
+        self.insert_date = insert_date
+        self.last_update = last_update
+        # assuming it's a dict.
+        if structure:
+            self.structure = _Fields(fields=[_Field(**f) for f in structure['fields']])
+
+
+class Collection(ChinoBaseObject):
+    """
+    Class for the Collection.
+
+    Example::
+
+        "collection":
+            {
+              "collection_id": "de991a83-da39-4a72-a79e-1376124ebd57",
+              "last_update": "2016-02-08T11:05:26.571Z",
+              "is_active": true,
+              "name": "testCollection",
+              "insert_date": "2016-02-08T11:05:26.571Z"
+            }
+    """
+    __str_name__ = 'collection'
+    __str_names__ = 'collections'
+
+    @property
+    def id(self):
+        return self.collection_id
+
+    def __init__(self, collection_id=None, name=None, insert_date=None, last_update=True,
+                 content=None, is_active=False):
+        self.collection_id = collection_id
+        self.name = name
+        self.insert_date = insert_date
+        self.last_update = last_update
+        self.is_active = is_active
+
+
+class Permission(ChinoBaseObject):
+    """
+    Class for the Permission.
+
+    Example::
+
+        {
+           "message":null,
+           "data":{
+              "permissions":[
+                 {
+                    "access":"Structure",
+                    "permission":{
+                       "Authorize":[
+                          "R",
+                          "U",
+                          "D",
+                          "A"
+                       ],
+                       "Manage":[
+                          "R",
+                          "U",
+                          "D"
+                       ]
+                    },
+                    "resource_type":"Schema",
+                    "resource_id":"6cc90e37-4018-4503-8e9b-c0f3057abd6d"
+                 }
+              ]
+           },
+           "result":"success",
+           "result_code":200
+        }
+    """
+    __str_name__ = 'permission'
+    __str_names__ = 'permissions'
+
+    @property
+    def id(self):
+        return "-"
+
+    def __init__(self, access=None, permission=None, resource_type=None, resource_id=None, parent_id=None):
+        self.access = access
+        if permission:
+            self.permission = _PermissionField(**permission)
+        self.resource_type = resource_type
+        if resource_id:
+            self.resource_id = resource_id
+        else:
+            # TODO: can parent_id be None?
+            self.parent_id = parent_id
+
+    def to_dict(self):
+        res = super(Permission, self).to_dict()
+        res['permission'] = self.permission.to_dict()
+        return res
+
+
+class _PermissionField(ChinoBaseObject):
+    def __init__(self, Authorize=None, Manage=None):
+        if Authorize:
+            self.authorize = Authorize
+        if Manage:
+            self.manage = Manage
+
+    # TODO: support functions to help in managing grants
+
+    @property
+    def id(self):
+        return "-"
+
+    def to_dict(self):
+        res = dict()
+        if hasattr(self, 'authorize'):
+            res['authorize'] = self.authorize
+        if hasattr(self, 'manage'):
+            res['manage'] = self.manage
+        return res
+
+
 class _SortField(ChinoBaseObject):
     def __init__(self, field, order='asc'):
         self.field = field
@@ -417,7 +566,6 @@ class Search(ChinoBaseObject):
 
 _PermissionProperty = namedtuple('_PermissionProperty', ['read', 'delete', 'update'])
 
-
 # class _PermissionProperty(ChinoBaseObject):
 #     """
 #         "read": true,
@@ -431,89 +579,89 @@ _PermissionProperty = namedtuple('_PermissionProperty', ['read', 'delete', 'upda
 #         self.delete = delete
 #         self.update = update
 
-class _Permission(ChinoBaseObject):
-    """
-
-    "permission": {
-                  "insert": true,
-                  "all_data": {
-                    "read": true,
-                    "update": false,
-                    "delete": true
-                  },
-                  "own_data": {
-                    "read": true,
-                    "update": true,
-                    "delete": false
-                  }
-                }
-    """
-
-    def __init__(self, insert, all_data, own_data):
-        self.insert = insert
-        if type(all_data) is dict:
-            self.all_data = _PermissionProperty(**all_data)
-        else:
-            self.all_data = all_data
-        if type(own_data) is dict:
-            self.own_data = _PermissionProperty(**own_data)
-        else:
-            self.own_data = own_data
-
-    def to_dict(self):
-        res = super(_Permission, self).to_dict()
-        if self.all_data:
-            res['all_data'] = [p.to_dict() for p in self.all_data]
-        if self.own_data:
-            res['own_data'] = [p.to_dict() for p in self.own_data]
-        return res
-
-
-class Permission(ChinoBaseObject):
-    """
-
-    Example::
-
-            "permissions": [
-              {
-                "repository_id": "3ddba8af-6965-4416-9c5c-acf6af95539d",
-                "schema_id": "b1cc4a53-19a1-4819-a8c7-20bf153ec9cf",
-                "group_id": "3ddba8af-6965-4416-9c5c-acf6af95539d",
-                "user_id": "b1cc4a53-19a1-4819-a8c7-20bf153ec9cf",
-                "permission": {
-                  "insert": true,
-                  "all_data": {
-                    "read": true,
-                    "update": false,
-                    "delete": true
-                  },
-                  "own_data": {
-                    "read": true,
-                    "update": true,
-                    "delete": false
-                  }
-                }
-              }
-            ]
-    """
-
-    def __init__(self, repository_id=None, schema_id=None, group_id=None, user_id=None, permission=None):
-        self.repository_id = repository_id
-        self.schema_id = schema_id
-        self.group_id = group_id
-        self.user_id = user_id
-        if permission:
-            if dict(permission) is dict:
-                self.permission = _Permission(permission)
-            else:
-                self.permission = permission
-
-    def to_dict(self):
-        res = super(Permission, self).to_dict()
-        if self.permission:
-            res['permission'] = [p.to_dict() for p in self.permission]
-        return res
-
+# class _Permission(ChinoBaseObject):
+#     """
+#
+#     "permission": {
+#                   "insert": true,
+#                   "all_data": {
+#                     "read": true,
+#                     "update": false,
+#                     "delete": true
+#                   },
+#                   "own_data": {
+#                     "read": true,
+#                     "update": true,
+#                     "delete": false
+#                   }
+#                 }
+#     """
+#
+#     def __init__(self, insert, all_data, own_data):
+#         self.insert = insert
+#         if type(all_data) is dict:
+#             self.all_data = _PermissionProperty(**all_data)
+#         else:
+#             self.all_data = all_data
+#         if type(own_data) is dict:
+#             self.own_data = _PermissionProperty(**own_data)
+#         else:
+#             self.own_data = own_data
+#
+#     def to_dict(self):
+#         res = super(_Permission, self).to_dict()
+#         if self.all_data:
+#             res['all_data'] = [p.to_dict() for p in self.all_data]
+#         if self.own_data:
+#             res['own_data'] = [p.to_dict() for p in self.own_data]
+#         return res
+#
+#
+# class Permission(ChinoBaseObject):
+#     """
+#
+#     Example::
+#
+#             "permissions": [
+#               {
+#                 "repository_id": "3ddba8af-6965-4416-9c5c-acf6af95539d",
+#                 "schema_id": "b1cc4a53-19a1-4819-a8c7-20bf153ec9cf",
+#                 "group_id": "3ddba8af-6965-4416-9c5c-acf6af95539d",
+#                 "user_id": "b1cc4a53-19a1-4819-a8c7-20bf153ec9cf",
+#                 "permission": {
+#                   "insert": true,
+#                   "all_data": {
+#                     "read": true,
+#                     "update": false,
+#                     "delete": true
+#                   },
+#                   "own_data": {
+#                     "read": true,
+#                     "update": true,
+#                     "delete": false
+#                   }
+#                 }
+#               }
+#             ]
+#     """
+#
+#     def __init__(self, repository_id=None, schema_id=None, group_id=None, user_id=None, permission=None):
+#         self.repository_id = repository_id
+#         self.schema_id = schema_id
+#         self.group_id = group_id
+#         self.user_id = user_id
+#         if permission:
+#             if dict(permission) is dict:
+#                 self.permission = _Permission(permission)
+#             else:
+#                 self.permission = permission
+#
+#     def to_dict(self):
+#         res = super(Permission, self).to_dict()
+#         if self.permission:
+#             res['permission'] = [p.to_dict() for p in self.permission]
+#         return res
+#
 
 Blob = namedtuple('Blob', ['filename', 'content'])
 BlobDetail = namedtuple('BlobDetail', ['bytes', 'blob_id', 'sha1', 'document_id', 'md5'])

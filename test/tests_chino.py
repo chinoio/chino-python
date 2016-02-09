@@ -1,3 +1,8 @@
+import datetime
+import json
+
+import time
+
 import cfg
 from chino.api import ChinoAPIClient
 from chino.exceptions import CallError
@@ -17,7 +22,8 @@ import hashlib
 
 class BaseChinoTest(unittest.TestCase):
     def setUp(self):
-        self.chino = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key)
+        self.chino = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key, version=cfg.v,
+                                    url=cfg.url)
         logging.config.fileConfig('logging.conf')
         self.logger = logging.getLogger('chino')
         self.logger.setLevel(logging.DEBUG)
@@ -183,11 +189,6 @@ class GroupChinoTest(BaseChinoTest):
         self.chino.users.delete(user.id, force=True)
 
 
-class PermissionChinoTest(BaseChinoTest):
-    # this is articulated to test. left as last
-    pass
-
-
 class RepositoryChinoTest(BaseChinoTest):
     def tearDown(self):
         list = self.chino.repositories.list()
@@ -204,13 +205,14 @@ class RepositoryChinoTest(BaseChinoTest):
         self.assertEqual(created.description, 'test')
         first = self.chino.repositories.list().repositories[0]
         self.assertTrue(
-            self._equals(created.to_dict(), first.to_dict()), "\n %s \n %s \n" % (created.to_json(), first.to_json()))
+                self._equals(created.to_dict(), first.to_dict()),
+                "\n %s \n %s \n" % (created.to_json(), first.to_json()))
         first.description = 'edited'
 
         resp = self.chino.repositories.update(first.id, description=first.description)
         detail = self.chino.repositories.detail(first.id)
         self.assertTrue(
-            self._equals(resp.to_dict(), detail.to_dict()), "\n %s \n %s \n" % (resp.to_json(), detail.to_json()))
+                self._equals(resp.to_dict(), detail.to_dict()), "\n %s \n %s \n" % (resp.to_json(), detail.to_json()))
 
         self.chino.repositories.delete(first.id)
 
@@ -240,7 +242,8 @@ class SchemaChinoTest(BaseChinoTest):
         detail = self.chino.schemas.detail(list.schemas[0].id)
         detail2 = self.chino.schemas.detail(created.id)
         self.assertTrue(
-            self._equals(detail.to_dict(), detail2.to_dict()), "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+                self._equals(detail.to_dict(), detail2.to_dict()),
+                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
 
         detail.structure.fields.append(_Field('string', 'new one'))
         data = detail.to_dict()
@@ -250,8 +253,149 @@ class SchemaChinoTest(BaseChinoTest):
         self.chino.schemas.update(**data)
         detail2 = self.chino.schemas.detail(detail.id)
         self.assertTrue(
-            self._equals(detail.to_dict(), detail2.to_dict()), "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+                self._equals(detail.to_dict(), detail2.to_dict()),
+                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
         self.chino.schemas.delete(detail.id)
+
+
+class UserSchemaChinoTest(BaseChinoTest):
+    def setUp(self):
+        super(UserSchemaChinoTest, self).setUp()
+
+    def tearDown(self):
+        list = self.chino.user_schemas.list()
+        for repo in list.user_schemas:
+            self.chino.user_schemas.delete(repo.id, force=True)
+
+    def test_list(self):
+        list = self.chino.user_schemas.list()
+        self.assertIsNotNone(list.paging)
+        self.assertIsNotNone(list.user_schemas)
+
+    def test_crud(self):
+        fields = [dict(name='fieldInt', type='integer'), dict(name='fieldString', type='string'),
+                  dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
+                  dict(name='fieldDateTime', type='datetime')]
+        created = self.chino.user_schemas.create('test', fields)
+        list = self.chino.user_schemas.list()
+        detail = self.chino.user_schemas.detail(list.user_schemas[0].id)
+        detail2 = self.chino.user_schemas.detail(created.id)
+        self.assertTrue(
+                self._equals(detail.to_dict(), detail2.to_dict()),
+                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+
+        detail.structure.fields.append(_Field('string', 'new one'))
+        data = detail.to_dict()
+        del data['insert_date']
+        del data['last_update']
+        del data['user_schema_id']
+        del data['groups']
+        self.chino.user_schemas.update(detail.user_schema_id, **data)
+        detail2 = self.chino.user_schemas.detail(detail.id)
+        self.assertTrue(
+                self._equals(detail.to_dict(), detail2.to_dict()),
+                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+        self.chino.user_schemas.delete(detail.id)
+
+
+class CollectionChinoTest(BaseChinoTest):
+    def setUp(self):
+        super(CollectionChinoTest, self).setUp()
+
+    def tearDown(self):
+        list = self.chino.collections.list()
+        for coll in list.collections:
+            self.chino.collections.delete(coll.id, force=True)
+
+    def test_list(self):
+        list = self.chino.user_schemas.list()
+        self.assertIsNotNone(list.paging)
+        self.assertIsNotNone(list.user_schemas)
+
+    def test_crud(self):
+        created = self.chino.collections.create("test")
+        list = self.chino.collections.list()
+        detail = self.chino.collections.detail(list.collections[0].id)
+        detail2 = self.chino.collections.detail(created.id)
+        self.assertTrue(
+                self._equals(detail.to_dict(), detail2.to_dict()),
+                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+
+        self.chino.collections.update(detail.id, name='test2')
+        detail2 = self.chino.collections.detail(detail.id)
+        self.assertTrue(detail2.name == 'test2')
+        self.chino.collections.delete(detail.id)
+
+    def test_docs(self):
+        repo = self.chino.repositories.create('test').id
+        fields = [dict(name='fieldInt', type='integer'), dict(name='fieldString', type='string'),
+                  dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
+                  dict(name='fieldDateTime', type='datetime')]
+        schema = self.chino.schemas.create(repo, 'test', fields).id
+        content = dict(fieldInt='123', fieldString='test', fieldBool=False, fieldDate='2015-02-19',
+                       fieldDateTime='2015-02-19 16:39:47')
+        document = self.chino.documents.create(schema, content=content)
+        collection = self.chino.collections.create("test")
+        l = self.chino.collections.list_documents(collection.id)
+        self.assertEqual(l.paging.count, 0)
+        self.chino.collections.add_document(collection.id, document.id)
+        l = self.chino.collections.list_documents(collection.id)
+        self.assertEqual(l.paging.count, 1)
+        self._equals(l.documents[0].to_dict(), document.to_dict())
+        self.chino.collections.rm_document(collection.id, document.id)
+        l = self.chino.collections.list_documents(collection.id)
+        self.assertEqual(l.paging.count, 0)
+
+        #         delete
+        self.chino.documents.delete(document.id, force=True)
+        self.chino.schemas.delete(schema, force=True)
+        self.chino.repositories.delete(repo, force=True)
+        self.chino.collections.delete(collection.id, force=True)
+
+
+class PermissionChinoTest(BaseChinoTest):
+    def setUp(self):
+        super(PermissionChinoTest, self).setUp()
+        # list = self.chino.users.list()
+        # for u in list.users:
+        #     self.chino.users.delete(u.id,force=True)
+
+    def test_premissions(self):
+        # create user via userschema
+        repo = self.chino.repositories.create('test').id
+        fields = [dict(name='fieldInt', type='integer'), dict(name='fieldString', type='string'),
+                  dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
+                  dict(name='fieldDateTime', type='datetime')]
+        schema = self.chino.schemas.create(repo, 'test', fields).id
+        # schema = "c0d0d956-8cd1-405b-90a9-62d3b3f70e84"
+        content = dict(fieldInt='123', fieldString='test', fieldBool=False, fieldDate='2015-02-19',
+                       fieldDateTime='2015-02-19 16:39:47')
+        document = self.chino.documents.create(schema, content=content)
+        fields = [dict(name='first_name', type='string'), dict(name='last_name', type='string'),
+                  dict(name='email', type='string')]
+        us = self.chino.user_schemas.create('test', fields)
+        username = 'test_%s' % round(time.time())
+        user = self.chino.users.create(us.id, username=username, password='12345678',
+                                       attributes=dict(first_name='john', last_name='doe',
+                                                       email='test@chino.io'))
+        self.chino.permissions.resources('grant', 'repository', 'user', user.id, manage=['R'])
+        self.chino.users.login(username, '12345678', cfg.customer_id)
+        permissions = self.chino.permissions.read_perms()
+        self.assertTrue(permissions[0].permission.manage == ['R'])
+        self.chino.users.logout()
+        self.chino.auth.set_auth_admin()
+        self.chino.permissions.resource('grant', 'document', document.id, 'user', user.id, manage=['R','U'])
+        self.chino.users.login(username, '12345678', cfg.customer_id)
+        permissions = self.chino.permissions.read_perms_document(document.id)
+        self.assertTrue(permissions[0].permission.manage == ['R','U'])
+        self.chino.users.logout()
+
+        self.chino.auth.set_auth_admin()
+        self.chino.documents.delete(document.id, force=True)
+        self.chino.schemas.delete(schema, force=True)
+        self.chino.repositories.delete(repo, force=True)
+        self.chino.users.delete(user.id, force=True)
+        self.chino.user_schemas.delete(us.id, force=True)
 
 
 class DocumentChinoTest(BaseChinoTest):
@@ -304,7 +448,8 @@ class DocumentChinoTest(BaseChinoTest):
         detail = self.chino.schemas.detail(list.schemas[0].id)
         detail2 = self.chino.schemas.detail(created.id)
         self.assertTrue(
-            self._equals(detail.to_dict(), detail2.to_dict()), "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+                self._equals(detail.to_dict(), detail2.to_dict()),
+                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
 
         detail.structure.fields.append(_Field('string', 'new one'))
         # delete repository_id
@@ -315,7 +460,8 @@ class DocumentChinoTest(BaseChinoTest):
         self.chino.schemas.update(**data)
         detail2 = self.chino.schemas.detail(detail.id)
         self.assertTrue(
-            self._equals(detail.to_dict(), detail2.to_dict()), "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+                self._equals(detail.to_dict(), detail2.to_dict()),
+                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
         self.chino.schemas.delete(detail.id)
 
 
@@ -350,170 +496,170 @@ class BlobChinoTest(BaseChinoTest):
 
 
 class SearchChinoTest(BaseChinoTest):
-     pass
-
-class PermissionChinoTest(BaseChinoTest):
-    def setUp(self):
-        super(PermissionChinoTest, self).setUp()
-        self.user = self.chino.users.create(username='ste', password='12345678',
-                                       attributes=dict(first_name='john', last_name='doe',
-                                                       email='test@chino.io'))
-        self.group = self.chino.groups.create('testing', attributes=dict(hospital='test'))
-
-        fields = [dict(name='fieldInt', type='integer'), dict(name='fieldString', type='string'),
-                  dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
-                  dict(name='fieldDateTime', type='datetime')]
-        self.repo = self.chino.repositories.create('test').id
-        self.schema = self.chino.schemas.create(self.repo, 'test', fields)
+    pass
 
 
-    def tearDown(self):
-        self.chino.users.delete(self.user.id,True)
-        self.chino.groups.delete(self.group.id,True)
-        self.chino.schemas.delete(self.schema.id,True)
-        self.chino.repositories.delete(self.repo, True)
-
-    def test_all(self):
-        resp = self.chino.permissions.user(self.user.id)
-        print resp
-        self.chino.groups.add_user(self.group.id,self.user.id)
-        resp = self.chino.permissions.user(self.user.id)
-        print resp
-        # /
-        #
-        # def test_user_and_auth(self):
-        #     list = self.chino.users.list()
-        #     self.assertIsNotNone(list.paging)
-        #     self.assertIsNotNone(list.users)
-        #     tot = list.paging.count
-        #     ste = None
-        #     for u in list.users:
-        #         if u.username == 'stefano':
-        #             ste = u
-        #             break
-        #     # create
-        #     if not ste:
-        #         # like this or a dict is also fine.
-        #         # attributes can be a dict too.
-        #         ste = self.chino.users.create(username='stefano', password='12345678',
-        #                                       attributes=dict(first_name='stefano', last_name='Tranquillini',
-        #                                                       email='stefano@chino.io'))
-        #         self.assertIsNotNone(ste)
-        #         list = self.chino.users.list()
-        #         self.assertEqual(list.paging.count, tot + 1)
-        #
-        #     self.assertRaises(CallError, self.chino.users.status)
-        #     self.chino.users.login('stefano', '12345678')
-        #     ste_res = self.chino.users.status()
-        #     print ste_res.id
-        #     self.assertEqual(ste.id, ste_res.id)
-
-
-
-        # self.logger.addHandler(logging.StreamHandler(sys.stdout))
-
-        # def test_repsitory(self):
-        #     pass
-        #     res = self.chino.repositories.list()
-        #     # for repo in res.repositories:
-        #     #     print repo.id
-        #     # print res.repositories[0]
-        #     # print res.repositories
-        #
-        # def test_objects(self):
-        #     # d = _DictContent(a=1,b=2)
-        #     # print dir(d)
-        #     # d = _DictContent(**dict(a=1,b=2))
-        #     # print dir(d)
-        #     #
-        #     # u = User(password='ciao')
-        #     # print u.to_dict()
-        #     #
-        #     # s = Schema(structure=dict(fields=[dict(type='int',name='ciao')]))
-        #     # print "A %s" % s.structure
-        #     #
-        #     # for f in s.structure.fields:
-        #     #     print f
-        #     #
-        #     # s = Search(schema_id='schema', result_type='full', sort=[dict(field=1, order=2),dict(field=2,order=3)])
-        #     # print s.to_dict()
-        #
-        #
-
-        #
-        #     #
-        #     # def test_creation(self):
-        #     #     repository = self.chino.repository_create('test')
-        #     #     repository = dict(repository_id='9cc4e5a0-7fb8-4b63-87a6-17ee5b2905fb')
-        #     #     self.logger.debug('repo %s', repository)
-        #     #     fields = [dict(name='fieldInt', type='integer'), dict(name='fieldString', type='string'),
-        #     #     dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
-        #     #     dict(name='fieldDateTime', type='datetime')]
-        #     #     schema = self.chino.schema_create(repository['repository_id'], 'test_schema', fields)
-        #     #     schema = dict(schema_id='23c0fcc3-dd29-4e01-9641-4c42337d0d5e')
-        #     #     schema = self.chino.schema_detail(schema['schema_id'])
-        #     #     self.logger.debug(schema['structure']['fields'])
-        #     #     self.assertEqual('fieldInt', schema['structure']['fields'][0]['name'])
-        #     #     self.assertEqual('integer', schema['structure']['fields'][0]['type'])
-        #     #     fields = schema['structure']['fields']
-        #     #     fields[0]['type']='boolean'
-        #     #     self.chino.schema_update(schema['schema_id'],dict(fields=fields))
-        #     #     schema = self.chino.schema_detail(schema['schema_id'])
-        #     #     self.assertEqual('boolean', schema['structure']['fields'][0]['type'])
-        #     #     fields = [dict(name='fieldInt2', type='integer'), dict(name='fieldString', type='string'),
-        #     #         dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
-        #     #               dict(name='fieldDateTime', type='datetime')]
-        #     #     self.chino.schema_update(schema['schema_id'],fields)
-        #     #     schema = self.chino.schema_detail(schema['schema_id'])
-        #     #     self.assertEqual('fieldInt2', schema['structure']['fields'][0]['name'])
-        #     #
-        #     #
-        #     #     # # create
-        #     #     content = dict(fieldInt='123', fieldString='test', fieldBool=False, fieldDate='2015-02-19',
-        #     #                    fieldDateTime='2015-02-19 16:39:47')
-        #     #     document = self.chino.document_create(schema['schema_id'], content=content)
-        #     #     document = dict(document_id='d7a2b614-7a64-4f81-b0f1-d721e3fea47a')
-        #     #     document = self.chino.document_detail(document['document_id'])
-        #     #     self.logger.debug("document %s", document)
-        #     #     content = dict(fieldInt='123',
-        #     #                    fieldString='test', fieldBool=False, fieldDate='2015-02-19',
-        #     #                    fieldDateTime='2015-02-19 16:39:47')
-        #     #     self.chino.document_update(document['document_id'], content)
-        #     #     document = self.chino.document_detail(document['document_id'])
-        #     #     self.assertEqual(123, document['content']['fieldInt'])
-        #     #     self.chino.document_update(document['document_id'],
-        #     #                                content=dict(fieldInt=349, fieldString='test', fieldBool=False,
-        #     #                                             fieldDate='2015-02-19',
-        #     #                                             fieldDateTime='2015-02-19 16:39:47'))
-        #     #     # update
-        #     #     content = dict(fieldInt=349,
-        #     #                    fieldString='test', fieldBool=False, fieldDate='2015-02-19',
-        #     #                    fieldDateTime='2015-02-19 16:39:47')
-        #     #     self.chino.document_update(document['document_id'], content)
-        #     #     document = self.chino.document_detail(document['document_id'])
-        #     #     self.assertEqual(349, document['content']['fieldInt'])
-        #     #     self.chino.document_delete(document['document_id'])
-        #     #     document = self.chino.document_detail(document['document_id'])
-        #     #     self.chino.document_delete(document['document_id'], force=True)
-        #     #     try:
-        #     #         self.chino.document_detail(document['document_id'])
-        #     #         self.assertEqual(0, 1, 'Delete was not done')
-        #     #     except:
-        #     #         # means that the document is not found -> correct
-        #     #         pass
-        #     #
-        #     #     self.chino.schema_update(schema['schema_id'], )
-
-        # def test_snippet(self):
-        #     _PermissionProperty = namedtuple('_PermissionProperty', ['read', 'delete', 'update'])
-        #
-        #     a=_PermissionProperty(1,2,3)
-        #     print a
-        #     print json.dumps(a)
-        #     b = dict(a=a)
-        #     print b
-        #     print json.dumps(b)
+# class PermissionChinoTest(BaseChinoTest):
+#     def setUp(self):
+#         super(PermissionChinoTest, self).setUp()
+#         self.user = self.chino.users.create(username='ste', password='12345678',
+#                                             attributes=dict(first_name='john', last_name='doe',
+#                                                             email='test@chino.io'))
+#         self.group = self.chino.groups.create('testing', attributes=dict(hospital='test'))
+#
+#         fields = [dict(name='fieldInt', type='integer'), dict(name='fieldString', type='string'),
+#                   dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
+#                   dict(name='fieldDateTime', type='datetime')]
+#         self.repo = self.chino.repositories.create('test').id
+#         self.schema = self.chino.schemas.create(self.repo, 'test', fields)
+#
+#     def tearDown(self):
+#         self.chino.users.delete(self.user.id, True)
+#         self.chino.groups.delete(self.group.id, True)
+#         self.chino.schemas.delete(self.schema.id, True)
+#         self.chino.repositories.delete(self.repo, True)
+#
+#     def test_all(self):
+#         resp = self.chino.permissions.user(self.user.id)
+#         print resp
+#         self.chino.groups.add_user(self.group.id, self.user.id)
+#         resp = self.chino.permissions.user(self.user.id)
+#         print resp
+# /
+#
+# def test_user_and_auth(self):
+#     list = self.chino.users.list()
+#     self.assertIsNotNone(list.paging)
+#     self.assertIsNotNone(list.users)
+#     tot = list.paging.count
+#     ste = None
+#     for u in list.users:
+#         if u.username == 'stefano':
+#             ste = u
+#             break
+#     # create
+#     if not ste:
+#         # like this or a dict is also fine.
+#         # attributes can be a dict too.
+#         ste = self.chino.users.create(username='stefano', password='12345678',
+#                                       attributes=dict(first_name='stefano', last_name='Tranquillini',
+#                                                       email='stefano@chino.io'))
+#         self.assertIsNotNone(ste)
+#         list = self.chino.users.list()
+#         self.assertEqual(list.paging.count, tot + 1)
+#
+#     self.assertRaises(CallError, self.chino.users.status)
+#     self.chino.users.login('stefano', '12345678')
+#     ste_res = self.chino.users.status()
+#     print ste_res.id
+#     self.assertEqual(ste.id, ste_res.id)
 
 
-        if __name__ == '__main__':
-            unittest.main()
+
+# self.logger.addHandler(logging.StreamHandler(sys.stdout))
+
+# def test_repsitory(self):
+#     pass
+#     res = self.chino.repositories.list()
+#     # for repo in res.repositories:
+#     #     print repo.id
+#     # print res.repositories[0]
+#     # print res.repositories
+#
+# def test_objects(self):
+#     # d = _DictContent(a=1,b=2)
+#     # print dir(d)
+#     # d = _DictContent(**dict(a=1,b=2))
+#     # print dir(d)
+#     #
+#     # u = User(password='ciao')
+#     # print u.to_dict()
+#     #
+#     # s = Schema(structure=dict(fields=[dict(type='int',name='ciao')]))
+#     # print "A %s" % s.structure
+#     #
+#     # for f in s.structure.fields:
+#     #     print f
+#     #
+#     # s = Search(schema_id='schema', result_type='full', sort=[dict(field=1, order=2),dict(field=2,order=3)])
+#     # print s.to_dict()
+#
+#
+
+#
+#     #
+#     # def test_creation(self):
+#     #     repository = self.chino.repository_create('test')
+#     #     repository = dict(repository_id='9cc4e5a0-7fb8-4b63-87a6-17ee5b2905fb')
+#     #     self.logger.debug('repo %s', repository)
+#     #     fields = [dict(name='fieldInt', type='integer'), dict(name='fieldString', type='string'),
+#     #     dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
+#     #     dict(name='fieldDateTime', type='datetime')]
+#     #     schema = self.chino.schema_create(repository['repository_id'], 'test_schema', fields)
+#     #     schema = dict(schema_id='23c0fcc3-dd29-4e01-9641-4c42337d0d5e')
+#     #     schema = self.chino.schema_detail(schema['schema_id'])
+#     #     self.logger.debug(schema['structure']['fields'])
+#     #     self.assertEqual('fieldInt', schema['structure']['fields'][0]['name'])
+#     #     self.assertEqual('integer', schema['structure']['fields'][0]['type'])
+#     #     fields = schema['structure']['fields']
+#     #     fields[0]['type']='boolean'
+#     #     self.chino.schema_update(schema['schema_id'],dict(fields=fields))
+#     #     schema = self.chino.schema_detail(schema['schema_id'])
+#     #     self.assertEqual('boolean', schema['structure']['fields'][0]['type'])
+#     #     fields = [dict(name='fieldInt2', type='integer'), dict(name='fieldString', type='string'),
+#     #         dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
+#     #               dict(name='fieldDateTime', type='datetime')]
+#     #     self.chino.schema_update(schema['schema_id'],fields)
+#     #     schema = self.chino.schema_detail(schema['schema_id'])
+#     #     self.assertEqual('fieldInt2', schema['structure']['fields'][0]['name'])
+#     #
+#     #
+#     #     # # create
+#     #     content = dict(fieldInt='123', fieldString='test', fieldBool=False, fieldDate='2015-02-19',
+#     #                    fieldDateTime='2015-02-19 16:39:47')
+#     #     document = self.chino.document_create(schema['schema_id'], content=content)
+#     #     document = dict(document_id='d7a2b614-7a64-4f81-b0f1-d721e3fea47a')
+#     #     document = self.chino.document_detail(document['document_id'])
+#     #     self.logger.debug("document %s", document)
+#     #     content = dict(fieldInt='123',
+#     #                    fieldString='test', fieldBool=False, fieldDate='2015-02-19',
+#     #                    fieldDateTime='2015-02-19 16:39:47')
+#     #     self.chino.document_update(document['document_id'], content)
+#     #     document = self.chino.document_detail(document['document_id'])
+#     #     self.assertEqual(123, document['content']['fieldInt'])
+#     #     self.chino.document_update(document['document_id'],
+#     #                                content=dict(fieldInt=349, fieldString='test', fieldBool=False,
+#     #                                             fieldDate='2015-02-19',
+#     #                                             fieldDateTime='2015-02-19 16:39:47'))
+#     #     # update
+#     #     content = dict(fieldInt=349,
+#     #                    fieldString='test', fieldBool=False, fieldDate='2015-02-19',
+#     #                    fieldDateTime='2015-02-19 16:39:47')
+#     #     self.chino.document_update(document['document_id'], content)
+#     #     document = self.chino.document_detail(document['document_id'])
+#     #     self.assertEqual(349, document['content']['fieldInt'])
+#     #     self.chino.document_delete(document['document_id'])
+#     #     document = self.chino.document_detail(document['document_id'])
+#     #     self.chino.document_delete(document['document_id'], force=True)
+#     #     try:
+#     #         self.chino.document_detail(document['document_id'])
+#     #         self.assertEqual(0, 1, 'Delete was not done')
+#     #     except:
+#     #         # means that the document is not found -> correct
+#     #         pass
+#     #
+#     #     self.chino.schema_update(schema['schema_id'], )
+
+# def test_snippet(self):
+#     _PermissionProperty = namedtuple('_PermissionProperty', ['read', 'delete', 'update'])
+#
+#     a=_PermissionProperty(1,2,3)
+#     print a
+#     print json.dumps(a)
+#     b = dict(a=a)
+#     print b
+#     print json.dumps(b)
+
+
+if __name__ == '__main__':
+    unittest.main()
