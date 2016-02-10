@@ -1,7 +1,10 @@
 #  CHINO.io Python client #
 *Official* Python wrapper for **CHINO.io** API,
 
-Docs is available [here](http://docs.chino.apiary.io/)
+Docs is available [here](https://test.chino.io/documentation/docs)
+
+**This is for the new relase of ChinoAPI**
+
 ## Install via pip 
 `(sudo) pip install git+https://github.com/chinoio/chino-python-library.git@release/newversion`
 
