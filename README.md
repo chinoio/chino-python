@@ -2,8 +2,13 @@
 *Official* Python wrapper for **CHINO.io** API,
 
 Docs is available [here](http://docs.chino.apiary.io/)
+## Install
+### via pip 
+`(sudo) pip install git+https://github.com/chinoio/chino-python-library.git@release/newversion`
 
-#How to use it
+> this is for the current branch, specify the branch after `@`
+
+##How to use it
 First create a variable from the `Chino` class
 
 `chino = ChinoAPI(<customer_id>, <customer_key>)`
