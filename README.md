@@ -2,8 +2,7 @@
 *Official* Python wrapper for **CHINO.io** API,
 
 Docs is available [here](http://docs.chino.apiary.io/)
-## Install
-### via pip 
+## Install via pip 
 `(sudo) pip install git+https://github.com/chinoio/chino-python-library.git@release/newversion`
 
 > this is for the current branch, specify the branch after `@`
