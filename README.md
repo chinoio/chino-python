@@ -150,12 +150,13 @@ In case of `list` it reutrns a ListeResult, which is composed of:
     - limit
 - `name of the object in plural`: such as `documents` that contains the list of objects
 
-**all the objects, execpt Blob and BlobDetail have a method to be transformed into a `dict` -> `.to_dict()` and to the the id `.id`**
+**all the objects, except Blob and BlobDetail have a method to be transformed into a `dict` -> `.to_dict()` and to the the id `.id`**
+
 
 ## Requirements ##
 - requests (already in requirements.txt)
 
-## DOC ##
+## DOC 
 Not completed. Can be compiled with [sphinx](sphinx-doc.org). 
 
 requires the following package (via pip)
@@ -168,7 +169,8 @@ requires the following package (via pip)
 Beta
 
 ##TODO:
-- Finish the test, 81% covered
+- Finish the test
+
 
 
 #BUILD AND USAGE

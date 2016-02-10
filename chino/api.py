@@ -6,7 +6,6 @@ client for Chino.io API
 :copyright: (c) 2015 by Chino SrlS
 :license: Apache 2.0, see LICENSE for more details.
 '''
-import base64
 import hashlib
 import json
 import os

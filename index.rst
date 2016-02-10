@@ -6,9 +6,9 @@
 CHINO.io PYTHON Client
 ======================
 
-.. autoclass:: chino.api.ChinoAPI
+.. automodule:: chino.api
     :members:
-    :private-members:
+    :undoc-members:
 
 
 Indices and tables
