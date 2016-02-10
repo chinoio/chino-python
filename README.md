@@ -40,7 +40,7 @@ Class that manages the auth, `chino.auth`
 ### User
 Class to manage the user, `chino.users`
 
-- `login`:
+- `login`
 - `current`
 - `logout`
 - `list`
@@ -63,15 +63,13 @@ Class to manage the user, `chino.users`
 ### Permission
 `chino.permissions`
 
-**Note: to be tested**
-
-- `user`
-- `create_user`
-- `delete_user`
-- `group`
-- `schemas`
-- `create_group`
-- `delete_group`
+- `resources`
+- `resource`
+- `resource_children`
+- `read_perms`
+- `read_perms_doc`
+- `read_perms_user`
+- `read_perms_group`
 
 ### Repository
 `chino.repotiories`
@@ -111,13 +109,32 @@ Class to manage the user, `chino.users`
 - `detail`: returns `Blob(filename, content)``
 - `delete`
 
-
 ### SEARCH
 `chino.searches`
 
-**Note: to be tested**
+- `search`: **Note: to be tested**
 
-- `search`
+### UserSchemas
+`chino.user_schemas`
+
+- `list`
+- `create`
+- `detail`
+- `update`
+- `delete`
+
+### Collections
+`chino.user_schemas`
+
+- `list`
+- `create`
+- `detail`
+- `update`
+- `delete`
+- `list_documents`
+- `add_document`
+- `rm_document`
+
 
 ### OTHER
 *Plus methods that are utils for auth and to manage communications*

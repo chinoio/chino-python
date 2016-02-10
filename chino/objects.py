@@ -205,11 +205,11 @@ class Group(ChinoBaseObject):
                 res['attributes'] = self.attributes.to_dict()
         return res
 
-    def __init__(self, group_id=None, groupname=None, insert_date=None, is_active=None, last_update=None,
+    def __init__(self, group_id=None, group_name=None, insert_date=None, is_active=None, last_update=None,
                  attributes=None):
         """Constructor for Group"""
         self.group_id = group_id
-        self.groupname = groupname
+        self.group_name = group_name
         self.insert_date = insert_date
         self.last_update = last_update
         self.is_active = is_active

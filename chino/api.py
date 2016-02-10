@@ -60,7 +60,10 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
         self.valid_call(res)
         try:
             # if result has data
-            data = res.json()['data']
+            ret = res.json()
+            logger.debug("result: %s " % json.dumps(ret))
+            logger.debug("-----")
+            data = ret['data']
             return data
         except:
             # emtpy response without errors, return True
@@ -145,17 +148,17 @@ class ChinoAPIUsers(ChinoAPIBase):
 
         # USER
 
-    def list(self, **pars):
-        url = "users"
+    def list(self, user_schema_id, **pars):
+        url = "user_schemas/%s/users" % user_schema_id
         return ListResult(User, self.apicall('GET', url, params=pars))
 
     def detail(self, user_id):
         url = "users/%s" % user_id
         return User(**self.apicall('GET', url)['user'])
 
-    def create(self, user_schema, username, password, attributes=None):
+    def create(self, user_schema_id, username, password, attributes=None):
         data = dict(username=username, password=password, attributes=attributes, )
-        url = "user_schemas/%s/users" % user_schema
+        url = "user_schemas/%s/users" % user_schema_id
         return User(**self.apicall('POST', url, data=data)['user'])
 
     def update(self, user_id, **kwargs):
@@ -185,7 +188,7 @@ class ChinoAPIGroups(ChinoAPIBase):
         return Group(**self.apicall('GET', url)['group'])
 
     def create(self, groupname, attributes=None):
-        data = dict(groupname=groupname, attributes=attributes)
+        data = dict(group_name=groupname, attributes=attributes)
         url = "groups"
         return Group(**self.apicall('POST', url, data=data)['group'])
 
@@ -225,7 +228,7 @@ class ChinoAPIPermissions(ChinoAPIBase):
         return self.apicall('POST', url, data=data)
 
     def resource(self, action, resource_type, resource_id, subject_type, subject_id,
-                   manage=None, authorize=None):
+                 manage=None, authorize=None):
         url = "perms/%s/%s/%s/%s/%s" % (action, resource_type, resource_id, subject_type, subject_id)
         data = dict()
         if manage:
@@ -489,26 +492,27 @@ class ChinoAPIBlobs(ChinoAPIBase):
         chunk = ""
         byte = rd.read(1)
         chunk += byte
-        actual_size = 1
+        length = 1
+        offset = 0
         # read all the file
         while byte != "":
             # if enough byte are read
-            if actual_size == chunk_size:
+            if length == chunk_size:
                 # send a cuhnk
-                blobdata = self.chunk(upload_id, chunk, offset)
-                # update offset
-                offset = blobdata['offset']
+                self.chunk(upload_id, chunk, length=length, offset=offset)
                 # update the hash
                 sha1.update(chunk)
                 chunk = ""
-                actual_size = 0
+                offset += length
+                length = 0
             # read the byte
             byte = rd.read(1)
-            actual_size += 1
+            length += 1
             chunk += byte
         # if end of the file
-        if actual_size != 0:
-            self.chunk(upload_id, chunk, offset)
+        if length != 0:
+            # Don't know why, but we need to subtract 1 from length.
+            self.chunk(upload_id, chunk,length=length-1, offset=offset)
             sha1.update(chunk)
         rd.close()
         # commit and check if everything was fine
@@ -522,10 +526,16 @@ class ChinoAPIBlobs(ChinoAPIBase):
         data = dict(document_id=document_id, field=field, file_name=field_name)
         return self.apicall('POST', url, data=data)['blob']
 
-    def chunk(self, upload_id, data, offset):
-        url = 'blobs'
-        data = dict(upload_id=upload_id, data=base64.b64encode(data), offset=offset)
-        return self.apicall('PUT', url, data=data)['blob']
+    def chunk(self, upload_id, data, length, offset):
+        # here we use directly request library to implement the binary
+        url = self._url + 'blobs/%s' % upload_id
+        # url = "http://httpbin.org/put"
+        logger.debug("calling %s %s - h(%s) " % ('PUT', url, dict(length=length,offset=offset)))
+        logger.debug("-----")
+        res = requests.put(url, data=data, auth=self._get_auth(),
+                           headers={'Content-Type': 'application/octet-stream', 'offset': offset, 'length': length})
+        self.valid_call(res)
+        return res.json()['data']['blob']
 
     def commit(self, upload_id):
         url = 'blobs/commit'

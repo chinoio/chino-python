@@ -80,28 +80,34 @@ class BaseChinoTest(unittest.TestCase):
 class UserChinoTest(BaseChinoTest):
     user = None
 
+    def setUp(self):
+        super(UserChinoTest, self).setUp()
+        fields = [dict(name='first_name', type='string'), dict(name='last_name', type='string'),
+                  dict(name='email', type='string')]
+        self.us = self.chino.user_schemas.create('test', fields)
+
     def tearDown(self):
         # if user has been created we remove it.
         self.logger.debug("tearing down %s", self.user)
-        list = self.chino.users.list()
+        list = self.chino.users.list(self.us.id)
         for user in list.users:
             self.chino.users.delete(user.id, force=True)
 
     def test_list(self):
-        list = self.chino.users.list()
+        list = self.chino.users.list(self.us.id)
         self.assertIsNotNone(list.paging)
         self.assertIsNotNone(list.users)
 
     def test_CRUD(self):
-        NAME = 'test.user'
+        NAME = 'test.user.new'
         EDIT = NAME + '.edited'
-        user = self.chino.users.create(username=NAME, password='12345678',
+        user = self.chino.users.create(self.us.id, username=NAME, password='12345678',
                                        attributes=dict(first_name='john', last_name='doe',
                                                        email='test@chino.io'))
         self.user = user
         self.assertIsNotNone(user)
         self.assertEqual(user.username, NAME)
-        list = self.chino.users.list()
+        list = self.chino.users.list(self.us.id)
         # NOTE: this may fail if key are used by someone else.
         ste_2 = self.chino.users.detail(list.users[0].id)
         self.assertEqual(ste_2.username, NAME)
@@ -112,6 +118,7 @@ class UserChinoTest(BaseChinoTest):
         del data['insert_date']
         del data['last_update']
         del data['groups']
+        del data['schema_id']
         ste_2 = self.chino.users.update(**data)
         self.logger.debug(ste_2)
         self.assertEqual(user.id, ste_2.id)
@@ -129,7 +136,7 @@ class UserChinoTest(BaseChinoTest):
         self.assertEqual(ste_2.username, EDIT)
 
         # now should be impossible to create the user
-        self.assertRaises(CallError, self.chino.users.create, username='error', password='12345678',
+        self.assertRaises(CallError, self.chino.users.create, self.us.id, username='error', password='12345678',
                           attributes=dict(first_name='john', last_name='doe',
                                           email='test@chino.io'))
 
@@ -158,7 +165,7 @@ class GroupChinoTest(BaseChinoTest):
     def test_CRUD(self):
         group_created = self.chino.groups.create('testing', attributes=dict(hospital='test'))
         self.assertTrue(self._equals(group_created.attributes.to_dict(), dict(hospital='test')))
-        self.assertEqual(group_created.groupname, 'testing')
+        self.assertEqual(group_created.group_name, 'testing')
         # NOTE: this may fail
         list = self.chino.groups.list()
         group = list.groups[0]
@@ -166,7 +173,7 @@ class GroupChinoTest(BaseChinoTest):
         # print group.to_dict()
         # print details.to_dict()
         self.assertTrue(self._equals(details, group), "\n %s \n %s \n" % (details.to_json(), group.to_json()))
-        group.groupname = 'updatedtesting'
+        group.group_name = 'updatedtesting'
         # remove extra params
         data = group.to_dict()
         del data['insert_date']
@@ -178,7 +185,10 @@ class GroupChinoTest(BaseChinoTest):
 
     def test_group_user(self):
         group_created = self.chino.groups.create('testing', attributes=dict(hospital='test'))
-        user = self.chino.users.create(username="ste", password='12345678',
+        fields = [dict(name='first_name', type='string'), dict(name='last_name', type='string'),
+                  dict(name='email', type='string')]
+        us = self.chino.user_schemas.create('test', fields)
+        user = self.chino.users.create(us.id, username="ste", password='12345678',
                                        attributes=dict(first_name='john', last_name='doe',
                                                        email='test@chino.io'))
         # if nothing is raised, then fine
@@ -378,18 +388,31 @@ class PermissionChinoTest(BaseChinoTest):
         user = self.chino.users.create(us.id, username=username, password='12345678',
                                        attributes=dict(first_name='john', last_name='doe',
                                                        email='test@chino.io'))
-        self.chino.permissions.resources('grant', 'repository', 'user', user.id, manage=['R'])
+        self.chino.permissions.resources('grant', 'repositories', 'users', user.id, manage=['R'])
         self.chino.users.login(username, '12345678', cfg.customer_id)
         permissions = self.chino.permissions.read_perms()
         self.assertTrue(permissions[0].permission.manage == ['R'])
         self.chino.users.logout()
         self.chino.auth.set_auth_admin()
-        self.chino.permissions.resource('grant', 'document', document.id, 'user', user.id, manage=['R','U'])
+        self.chino.permissions.resource('grant', 'documents', document.id, 'users', user.id, manage=['R', 'U'])
         self.chino.users.login(username, '12345678', cfg.customer_id)
         permissions = self.chino.permissions.read_perms_document(document.id)
-        self.assertTrue(permissions[0].permission.manage == ['R','U'])
+        self.assertTrue(permissions[0].permission.manage == ['R', 'U'])
         self.chino.users.logout()
+        self.chino.auth.set_auth_admin()
+        self.chino.permissions.resource_children('grant', 'schemas', schema, 'documents', 'users', user.id,
+                                                 manage=['R', 'U', 'L'], authorize=['A'])
+        self.chino.users.login(username, '12345678', cfg.customer_id)
+        permissions = self.chino.permissions.read_perms()
+        # 0 is the one above
+        self.assertTrue(permissions[1].permission.manage == ['R', 'U', 'L'])
+        self.assertTrue(permissions[1].permission.authorize == ['A'])
 
+        permissions = self.chino.permissions.read_perms_user(user.id)
+        self.assertTrue(permissions[0].permission.manage == ['R'])
+        self.assertTrue(permissions[1].permission.manage == ['R', 'U', 'L'])
+        self.assertTrue(permissions[1].permission.authorize == ['A'])
+        self.chino.users.logout()
         self.chino.auth.set_auth_admin()
         self.chino.documents.delete(document.id, force=True)
         self.chino.schemas.delete(schema, force=True)
@@ -481,10 +504,23 @@ class BlobChinoTest(BaseChinoTest):
     def test_blob(self):
         self.document = self.chino.documents.create(self.schema, content=dict(name='test'))
 
-        blob = self.chino.blobs.send(self.document.id, 'blobTest', 'test/logo.png')
+        blob = self.chino.blobs.send(self.document.id, 'blobTest', 'logo.png', chunk_size=1024)
 
         blob_detail = self.chino.blobs.detail(blob.blob_id)
-        rw = open("test/out" + blob_detail.filename, "wb")
+        rw = open("out" + blob_detail.filename, "wb")
+        rw.write(blob_detail.content)
+        rw.close()
+        # rd = open('test/logo.png', "rb")
+        md5_detail = hashlib.md5()
+        md5_detail.update(blob_detail.content)
+        # self.assertEqual(md5_detail.digest(), md5_original.digest())
+        self.assertEqual(md5_detail.hexdigest(), blob.md5)
+        self.blob = blob
+
+        blob = self.chino.blobs.send(self.document.id, 'blobTest', 'test.sh', chunk_size=1024)
+
+        blob_detail = self.chino.blobs.detail(blob.blob_id)
+        rw = open("out" + blob_detail.filename, "wb")
         rw.write(blob_detail.content)
         rw.close()
         # rd = open('test/logo.png', "rb")
