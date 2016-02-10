@@ -3,7 +3,7 @@
 
 Docs is available [here](https://test.chino.io/documentation/docs)
 
-**This is for the new relase of ChinoAPI**
+**This is for the new release of ChinoAPIClient**
 
 ## Install via pip 
 `(sudo) pip install git+https://github.com/chinoio/chino-python-library.git@release/newversion`
@@ -13,7 +13,8 @@ Docs is available [here](https://test.chino.io/documentation/docs)
 ##How to use it
 First create a variable from the `Chino` class
 
-`chino = ChinoAPI(<customer_id>, <customer_key>)`
+`from chino.api import ChinoAPIClient`
+`chino = ChinoAPIClient(<customer_id>, <customer_key>)`
 
 passing your `customer_id` and `customer_key`
 
@@ -21,8 +22,8 @@ this will give you access to the methods:
 
 ### Init
 
-- to init the `ChinoAPI` import it `from chino.api import ChinoAPI`
-- `chino = ChinoAPI(customer_id=..,customer_key=..,customer_token=..)`
+- to init the `ChinoAPIClient` import it `from chino.api import ChinoAPIClient`
+- `chino = ChinoAPIClient(customer_id=..,customer_key=..,customer_token=..)`
     
     - customer_id: mandatory
     - customer_key: optional, if specified the auth is set as admin
@@ -183,4 +184,4 @@ Beta
 #BUILD AND USAGE
 
 - `python setup.py install`
--  in python `from chino.api import ChinoAPI`
+-  in python `from chino.api import ChinoAPIClient`
