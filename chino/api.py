@@ -727,7 +727,8 @@ class ChinoAPIClient(object):
     final_url = ""
     users = groups = permissions = repositories = schemas = documents = blobs = searches = None
 
-    def __init__(self, customer_id, customer_key=None, customer_token=None, version='v1', url='https://api.chino.io/'):
+    # TODO: change to prod url when ready
+    def __init__(self, customer_id, customer_key=None, customer_token=None, version='v1', url='https://api.test.chino.io/'):
         '''
         Init the class
 
