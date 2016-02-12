@@ -22,7 +22,7 @@ import hashlib
 
 class BaseChinoTest(unittest.TestCase):
     def setUp(self):
-        self.chino = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key, version=cfg.v,
+        self.chino = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
                                     url=cfg.url)
         logging.config.fileConfig('logging.conf')
         self.logger = logging.getLogger('chino')

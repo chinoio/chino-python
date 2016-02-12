@@ -741,7 +741,11 @@ class ChinoAPIClient(object):
         '''
 
         # smarter wayt o add slash?
-        final_url = url + version + '/'
+        if not url.endswith('/'):
+            url +='/'
+        if not version.endswith('/'):
+            version +='/'
+        final_url = url + version
         self.final_url = final_url
         auth = ChinoAuth(customer_id, customer_key, customer_token)
         self.auth = auth

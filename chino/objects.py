@@ -10,7 +10,7 @@ class ChinoBaseObject(object):
 
     @property
     def id(self):
-        raise '-'
+        return '-'
 
     def to_json(self):
         # raise NotImplementedError()

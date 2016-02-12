@@ -8,3 +8,4 @@ dist
 outlogo.png
 snippets.py
 *.pyc
+outtest.sh
