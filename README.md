@@ -132,7 +132,7 @@ Class to manage the user, `chino.users`
 - `delete`
 
 ### Collections
-`chino.user_schemas`
+`chino.collections`
 
 - `list`
 - `create`
@@ -185,3 +185,4 @@ Beta
 
 - `python setup.py install`
 -  in python `from chino.api import ChinoAPIClient`
+

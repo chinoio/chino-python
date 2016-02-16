@@ -559,7 +559,7 @@ class ChinoAPISearches(ChinoAPIBase):
         super(ChinoAPISearches, self).__init__(auth, url)
 
     def search(self, schema_id, result_type="FULL_CONTENT", filter_type="and", sort=None, filters=None):
-        url = 'search'
+        url = 'search/'
         if not sort:
             sort = []
         if not filters:
