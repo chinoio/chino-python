@@ -127,6 +127,12 @@ class UserChinoTest(BaseChinoTest):
         ste_2 = self.chino.users.detail(user.id)
         self.assertEqual(ste_2.username, EDIT)
 
+        # partial update
+        ste_3 = self.chino.users.partial_update(user.id, **dict(attributes=dict(first_name=EDIT)))
+        self.assertEqual(user.id, ste_3.id)
+        self.assertEqual(ste_3.attributes.first_name, EDIT)
+        ste_4 = self.chino.users.detail(user.id)
+        self.assertEqual(ste_4.attributes.first_name, EDIT)
         # current not working for main user
         self.assertRaises(CallError, self.chino.users.current)
 
@@ -335,6 +341,22 @@ class CollectionChinoTest(BaseChinoTest):
         detail2 = self.chino.collections.detail(detail.id)
         self.assertTrue(detail2.name == 'test2')
         self.chino.collections.delete(detail.id)
+
+    def test_search(self):
+        ids = []
+        for i in range(10):
+            created = self.chino.collections.create("test" + str(i))
+            ids.append(created.id)
+
+        res = self.chino.collections.search('test', contains=True)
+        self.assertEqual(res.paging.total_count, 10)
+        res = self.chino.collections.search('test2', contains=False)
+        for collection in res.collections:
+            self.assertTrue(collection.name.startswith('test'))
+        self.assertEqual(res.paging.total_count, 1)
+        self.assertEqual(res.collections[0].name, 'test2')
+        for id in ids:
+            self.chino.collections.delete(id, True)
 
     def test_docs(self):
         repo = self.chino.repositories.create('test').id

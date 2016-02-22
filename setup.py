@@ -1,8 +1,11 @@
 import os
 
-from setuptools import setup
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 
-__author__ = 'Stefano Tranquillini <stefano.tranquillini@gmail.com>'
+__author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
 
 # Utility function to read the README file.
@@ -20,6 +23,8 @@ setup(name='chino',
       author_email='stefano@chino.io',
       url='https://www.chino.io',
       packages=['chino'],
+      license = 'CC BY-SA 4.0',
+      install_requires=['requests >=2.9.1, <=3'],
       classifiers=[
           "Development Status :: 4 - Beta",
           "Topic :: Software Development",

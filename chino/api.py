@@ -49,11 +49,13 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
         if method == 'GET':
             res = self._apicall_get(url, params)
         elif method == 'POST':
-            res = self._apicall_post(url, data)
+            res = self._apicall_post(url, data, params)
         elif method == 'PUT':
             res = self._apicall_put(url, data)
         elif method == 'DELETE':
             res = self._apicall_delete(url, params)
+        elif method == 'PATCH':
+            res = self._apicall_patch(url, data)
         else:
             raise MethodNotSupported
         self.valid_call(res)
@@ -76,12 +78,20 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
         r = requests.put(url, auth=self._get_auth(), data=json.dumps(d))
         return r
 
-    def _apicall_post(self, url, data):
+    def _apicall_patch(self, url, data):
         if hasattr(data, 'to_dict()'):
             d = data.to_dict()
         else:
             d = data
-        r = requests.post(url, auth=self._get_auth(), data=json.dumps(d))
+        r = requests.patch(url, auth=self._get_auth(), data=json.dumps(d))
+        return r
+
+    def _apicall_post(self, url, data, params):
+        if hasattr(data, 'to_dict()'):
+            d = data.to_dict()
+        else:
+            d = data
+        r = requests.post(url, auth=self._get_auth(), params=params, data=json.dumps(d))
         return r
 
     def _apicall_get(self, url, params):
@@ -163,6 +173,11 @@ class ChinoAPIUsers(ChinoAPIBase):
     def update(self, user_id, **kwargs):
         url = "users/%s" % user_id
         u_updated = self.apicall('PUT', url, data=kwargs)['user']
+        return User(**u_updated)
+
+    def partial_update(self, user_id, **kwargs):
+        url = "users/%s" % user_id
+        u_updated = self.apicall('PATCH', url, data=kwargs)['user']
         return User(**u_updated)
 
     def delete(self, user_id, force=False):
@@ -489,29 +504,31 @@ class ChinoAPIBlobs(ChinoAPIBase):
 
         sha1 = hashlib.sha1()
         chunk = ""
-        byte = rd.read(1)
-        chunk += byte
-        length = 1
+        length = 0
         offset = 0
         # read all the file
-        while byte != "":
-            # if enough byte are read
-            if length == chunk_size:
-                # send a cuhnk
-                self.chunk(upload_id, chunk, length=length, offset=offset)
-                # update the hash
-                sha1.update(chunk)
-                chunk = ""
-                offset += length
-                length = 0
-            # read the byte
-            byte = rd.read(1)
-            length += 1
-            chunk += byte
-        # if end of the file
+        with open(file_path, 'rb') as rd:
+            # forever
+            while True:
+                byte = rd.read(1)
+                # if we are at the end of the file, than break
+                if not byte:
+                    break
+                # read the byte
+                length += 1
+                chunk += byte
+                # if we have read enough bytes
+                if length == chunk_size:
+                    # send a cuhnk
+                    self.chunk(upload_id, chunk, length=length, offset=offset)
+                    # update the hash
+                    sha1.update(chunk)
+                    chunk = ""
+                    offset += length
+                    length = 0
         if length != 0:
-            # Don't know why, but we need to subtract 1 from length.
-            self.chunk(upload_id, chunk,length=length-1, offset=offset)
+            # send the last chunk
+            self.chunk(upload_id, chunk, length=length, offset=offset)
             sha1.update(chunk)
         rd.close()
         # commit and check if everything was fine
@@ -529,7 +546,7 @@ class ChinoAPIBlobs(ChinoAPIBase):
         # here we use directly request library to implement the binary
         url = self._url + 'blobs/%s' % upload_id
         # url = "http://httpbin.org/put"
-        logger.debug("calling %s %s - h(%s) " % ('PUT', url, dict(length=length,offset=offset)))
+        logger.debug("calling %s %s - h(%s) " % ('PUT', url, dict(length=length, offset=offset)))
         logger.debug("-----")
         res = requests.put(url, data=data, auth=self._get_auth(),
                            headers={'Content-Type': 'application/octet-stream', 'offset': offset, 'length': length})
@@ -719,6 +736,11 @@ class ChinoAPICollections(ChinoAPIBase):
         url = "collections/%s/documents/%s" % (collection_id, document_id)
         return self.apicall('DELETE', url)
 
+    def search(self, name, contains=False, **pars):
+        url = "collections/search"
+        data = dict(name=name, contains=contains)
+        return ListResult(Collection, self.apicall('POST', url, params=pars, data=data))
+
 
 class ChinoAPIClient(object):
     """
@@ -728,7 +750,8 @@ class ChinoAPIClient(object):
     users = groups = permissions = repositories = schemas = documents = blobs = searches = None
 
     # TODO: change to prod url when ready
-    def __init__(self, customer_id, customer_key=None, customer_token=None, version='v1', url='https://api.test.chino.io/'):
+    def __init__(self, customer_id, customer_key=None, customer_token=None, version='v1',
+                 url='https://api.test.chino.io/'):
         '''
         Init the class
 
@@ -742,9 +765,9 @@ class ChinoAPIClient(object):
 
         # smarter wayt o add slash?
         if not url.endswith('/'):
-            url +='/'
+            url += '/'
         if not version.endswith('/'):
-            version +='/'
+            version += '/'
         final_url = url + version
         self.final_url = final_url
         auth = ChinoAuth(customer_id, customer_key, customer_token)

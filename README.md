@@ -55,6 +55,7 @@ Class to manage the user, `chino.users`
 - `detail`
 - `create`
 - `update`
+- `partial_update`
 - `delete`
 
 ### Group
@@ -142,6 +143,7 @@ Class to manage the user, `chino.users`
 - `list_documents`
 - `add_document`
 - `rm_document`
+- `search`
 
 
 ### OTHER
@@ -160,10 +162,6 @@ In case of `list` it reutrns a ListeResult, which is composed of:
 
 **all the objects, except Blob and BlobDetail have a method to be transformed into a `dict` -> `.to_dict()` and to the the id `.id`**
 
-
-## Requirements ##
-- requests (already in requirements.txt)
-
 ## DOC 
 Not completed. Can be compiled with [sphinx](sphinx-doc.org). 
 
@@ -173,16 +171,18 @@ requires the following package (via pip)
 - sphinx-autodoc-annotation
 - sphinx-rtd-theme
 
-#Status
+##Status
 Beta
 
 ##TODO:
 - Finish the test
 
+##For contributions:
 
+- install requirements.txt
+- dev
+- create a pull request.
 
-#BUILD AND USAGE
-
-- `python setup.py install`
--  in python `from chino.api import ChinoAPIClient`
+##Support
+use issues of github 
 
