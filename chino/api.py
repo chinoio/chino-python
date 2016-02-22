@@ -458,8 +458,10 @@ class ChinoAPIDocuments(ChinoAPIBase):
     def __init__(self, auth, url):
         super(ChinoAPIDocuments, self).__init__(auth, url)
 
-    def list(self, schema_id, **pars):
+    def list(self, schema_id, full_document=False, **pars):
         url = "schemas/%s/documents" % schema_id
+        if full_document:
+            pars['full_document'] = 'true'
         return ListResult(Document, self.apicall('GET', url, params=pars))
 
     def create(self, schema_id, content):

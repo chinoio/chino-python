@@ -460,9 +460,15 @@ class DocumentChinoTest(BaseChinoTest):
         self.chino.repositories.delete(self.repo, True)
 
     def test_list(self):
+        content = dict(fieldInt='123', fieldString='test', fieldBool=False, fieldDate='2015-02-19',
+                       fieldDateTime='2015-02-19 16:39:47')
+        document = self.chino.documents.create(self.schema, content=content)
         list = self.chino.documents.list(self.schema)
         self.assertIsNotNone(list.paging)
         self.assertIsNotNone(list.documents)
+        self.assertIsNone(list.documents[0].content)
+        # self.chino.documents.delete(document.id, True)
+         # self.assertIsNotNone(list.documents[0].content)
 
     def test_crud(self):
         content = dict(fieldInt='123', fieldString='test', fieldBool=False, fieldDate='2015-02-19',
