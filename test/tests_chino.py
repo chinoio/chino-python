@@ -1,14 +1,10 @@
-import datetime
-import json
-
 import time
-
 import cfg
 from chino.api import ChinoAPIClient
 from chino.exceptions import CallError
 from chino.objects import _DictContent, _Field
 
-__author__ = 'Stefano Tranquillini <stefano.tranquillini@gmail.com>'
+__author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
 import unittest
 import logging
@@ -16,16 +12,12 @@ import logging.config
 import hashlib
 
 
-# logging.basicConfig(stream=sys.stderr)
-
-
-
 class BaseChinoTest(unittest.TestCase):
     def setUp(self):
         self.chino = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
                                     url=cfg.url)
-        logging.config.fileConfig('logging.conf')
-        self.logger = logging.getLogger('chino')
+        logging.config.fileConfig('../logging.conf')
+        self.logger = logging.getLogger('test')
         self.logger.setLevel(logging.DEBUG)
 
     def _equals(self, i_d1, i_d2):
@@ -94,6 +86,7 @@ class UserChinoTest(BaseChinoTest):
             self.chino.users.delete(user.id, force=True)
 
     def test_list(self):
+
         list = self.chino.users.list(self.us.id)
         self.assertIsNotNone(list.paging)
         self.assertIsNotNone(list.users)
@@ -364,8 +357,8 @@ class CollectionChinoTest(BaseChinoTest):
                   dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
                   dict(name='fieldDateTime', type='datetime')]
         schema = self.chino.schemas.create(repo, 'test', fields).id
-        content = dict(fieldInt='123', fieldString='test', fieldBool=False, fieldDate='2015-02-19',
-                       fieldDateTime='2015-02-19 16:39:47')
+        content = dict(fieldInt=123, fieldString='test', fieldBool=False, fieldDate='2015-02-19',
+                       fieldDateTime='2015-02-19T16:39:47')
         document = self.chino.documents.create(schema, content=content)
         collection = self.chino.collections.create("test")
         l = self.chino.collections.list_documents(collection.id)
@@ -400,8 +393,8 @@ class PermissionChinoTest(BaseChinoTest):
                   dict(name='fieldDateTime', type='datetime')]
         schema = self.chino.schemas.create(repo, 'test', fields).id
         # schema = "c0d0d956-8cd1-405b-90a9-62d3b3f70e84"
-        content = dict(fieldInt='123', fieldString='test', fieldBool=False, fieldDate='2015-02-19',
-                       fieldDateTime='2015-02-19 16:39:47')
+        content = dict(fieldInt=123, fieldString='test', fieldBool=False, fieldDate='2015-02-19',
+                       fieldDateTime='2015-02-19T16:39:47')
         document = self.chino.documents.create(schema, content=content)
         fields = [dict(name='first_name', type='string'), dict(name='last_name', type='string'),
                   dict(name='email', type='string')]
@@ -460,33 +453,35 @@ class DocumentChinoTest(BaseChinoTest):
         self.chino.repositories.delete(self.repo, True)
 
     def test_list(self):
-        content = dict(fieldInt='123', fieldString='test', fieldBool=False, fieldDate='2015-02-19',
-                       fieldDateTime='2015-02-19 16:39:47')
+        content = dict(fieldInt=123, fieldString='test', fieldBool=False,
+                       fieldDate='2015-02-19',
+                       fieldDateTime='2015-02-19T16:39:47')
         document = self.chino.documents.create(self.schema, content=content)
         list = self.chino.documents.list(self.schema)
         self.assertIsNotNone(list.paging)
         self.assertIsNotNone(list.documents)
         self.assertIsNone(list.documents[0].content)
-        # self.chino.documents.delete(document.id, True)
-         # self.assertIsNotNone(list.documents[0].content)
+        list = self.chino.documents.list(self.schema, True)
+        self.assertIsNotNone(list.documents[0].content)
+        self.chino.documents.delete(document.id, True)
 
     def test_crud(self):
-        content = dict(fieldInt='123', fieldString='test', fieldBool=False, fieldDate='2015-02-19',
-                       fieldDateTime='2015-02-19 16:39:47')
+        content = dict(fieldInt=123, fieldString='test', fieldBool=False, fieldDate='2015-02-19',
+                       fieldDateTime='2015-02-19T16:39:47')
         document = self.chino.documents.create(self.schema, content=content)
         # get the last
         document_det = self.chino.documents.detail(document.id)
         self.assertEqual(document.last_update, document_det.last_update)
-        content = dict(fieldInt='123',
+        content = dict(fieldInt=123,
                        fieldString='test', fieldBool=False, fieldDate='2015-02-19',
-                       fieldDateTime='2015-02-19 16:39:47')
+                       fieldDateTime='2015-02-19T16:39:47')
         self.chino.documents.update(document.id, content=content)
         document = self.chino.documents.detail(document.id)
         self.assertEqual(123, document.content.fieldInt)
         self.chino.documents.update(document.id,
                                     content=dict(fieldInt=349, fieldString='test', fieldBool=False,
                                                  fieldDate='2015-02-19',
-                                                 fieldDateTime='2015-02-19 16:39:47'))
+                                                 fieldDateTime='2015-02-19T16:39:47'))
         document = self.chino.documents.detail(document.id)
         self.assertEqual(349, document.content.fieldInt)
         self.chino.documents.delete(document.id)
