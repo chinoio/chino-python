@@ -32,7 +32,7 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
     _url = None
     auth = None
 
-    def __init__(self, auth, url):
+    def __init__(self, auth, url, timeout):
         '''
         Init the class, auth is ref, so it can be changed and changes applies to all the other classes.
 
@@ -42,6 +42,7 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
         '''
         self._url = url
         self.auth = auth
+        self.timeout = timeout
 
     # UTILS
     def apicall(self, method, url, params=None, data=None):
@@ -72,7 +73,7 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
             d = data.to_dict()
         else:
             d = data
-        r = requests.put(url, auth=self._get_auth(), data=json.dumps(d))
+        r = requests.put(url, auth=self._get_auth(), data=json.dumps(d), timeout=self.timeout)
         return r
 
     def _apicall_post(self, url, data):
@@ -80,15 +81,15 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
             d = data.to_dict()
         else:
             d = data
-        r = requests.post(url, auth=self._get_auth(), data=json.dumps(d))
+        r = requests.post(url, auth=self._get_auth(), data=json.dumps(d), timeout=self.timeout)
         return r
 
     def _apicall_get(self, url, params):
-        r = requests.get(url, auth=self._get_auth(), params=params)
+        r = requests.get(url, auth=self._get_auth(), params=params, timeout=self.timeout)
         return r
 
     def _apicall_delete(self, url, params):
-        r = requests.delete(url, auth=self._get_auth(), params=params)
+        r = requests.delete(url, auth=self._get_auth(), params=params, timeout=self.timeout)
         return r
 
     def _get_auth(self):
@@ -113,8 +114,8 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
 
 
 class ChinoAPIUsers(ChinoAPIBase):
-    def __init__(self, auth, url):
-        super(ChinoAPIUsers, self).__init__(auth, url)
+    def __init__(self, auth, url, timeout):
+        super(ChinoAPIUsers, self).__init__(auth, url, timeout)
 
     def login(self, username, password, customer_id=None):
         # remove auth and save in temp var (in case of problems)
@@ -174,8 +175,8 @@ class ChinoAPIUsers(ChinoAPIBase):
 
 
 class ChinoAPIGroups(ChinoAPIBase):
-    def __init__(self, auth, url):
-        super(ChinoAPIGroups, self).__init__(auth, url)
+    def __init__(self, auth, url, timeout):
+        super(ChinoAPIGroups, self).__init__(auth, url, timeout)
 
     def list(self, **pars):
         url = "groups"
@@ -213,8 +214,8 @@ class ChinoAPIGroups(ChinoAPIBase):
 
 
 class ChinoAPIPermissions(ChinoAPIBase):
-    def __init__(self, auth, url):
-        super(ChinoAPIPermissions, self).__init__(auth, url)
+    def __init__(self, auth, url, timeout):
+        super(ChinoAPIPermissions, self).__init__(auth, url, timeout)
 
     def user(self, user_id):
         url = "perms/users/%s" % user_id
@@ -248,8 +249,8 @@ class ChinoAPIPermissions(ChinoAPIBase):
 
 
 class ChinoAPIRepositories(ChinoAPIBase):
-    def __init__(self, auth, url):
-        super(ChinoAPIRepositories, self).__init__(auth, url)
+    def __init__(self, auth, url, timeout):
+        super(ChinoAPIRepositories, self).__init__(auth, url, timeout)
 
     def list(self, **pars):
         """
@@ -310,8 +311,8 @@ class ChinoAPIRepositories(ChinoAPIBase):
 
 
 class ChinoAPISchemas(ChinoAPIBase):
-    def __init__(self, auth, url):
-        super(ChinoAPISchemas, self).__init__(auth, url)
+    def __init__(self, auth, url, timeout):
+        super(ChinoAPISchemas, self).__init__(auth, url, timeout)
 
     def list(self, repository_id, **pars):
         """
@@ -361,8 +362,8 @@ class ChinoAPISchemas(ChinoAPIBase):
 
 
 class ChinoAPIDocuments(ChinoAPIBase):
-    def __init__(self, auth, url):
-        super(ChinoAPIDocuments, self).__init__(auth, url)
+    def __init__(self, auth, url, timeout):
+        super(ChinoAPIDocuments, self).__init__(auth, url, timeout)
 
     def list(self, schema_id, **pars):
         url = "schemas/%s/documents" % schema_id
@@ -392,8 +393,8 @@ class ChinoAPIDocuments(ChinoAPIBase):
 
 
 class ChinoAPIBlobs(ChinoAPIBase):
-    def __init__(self, auth, url):
-        super(ChinoAPIBlobs, self).__init__(auth, url)
+    def __init__(self, auth, url, timeout):
+        super(ChinoAPIBlobs, self).__init__(auth, url, timeout)
 
     def send(self, document_id, blob_field_name, file_path, chunk_size=12 * 1024):
         if not os.path.exists(file_path):
@@ -468,8 +469,8 @@ class ChinoAPIBlobs(ChinoAPIBase):
 
 
 class ChinoAPISearches(ChinoAPIBase):
-    def __init__(self, auth, url):
-        super(ChinoAPISearches, self).__init__(auth, url)
+    def __init__(self, auth, url, timeout):
+        super(ChinoAPISearches, self).__init__(auth, url, timeout)
 
     def search(self, schema_id, result_type="FULL_CONTENT", filter_type="and", sort=None, filters=None):
         url = 'search'
@@ -527,7 +528,8 @@ class ChinoAPIClient(object):
 
     users = groups = permissions = repositories = schemas = documents = blobs = searches = None
 
-    def __init__(self, customer_id, customer_key=None, customer_token=None, version='v1', url='https://api.chino.io/'):
+    def __init__(self, customer_id, customer_key=None, customer_token=None, version='v1', url='https://api.chino.io/',
+                 timeout=30):
         '''
         Init the class
 
@@ -543,11 +545,11 @@ class ChinoAPIClient(object):
         final_url = url + version + '/'
         auth = ChinoAuth(customer_id, customer_key, customer_token)
         self.auth = auth
-        self.users = ChinoAPIUsers(auth, final_url)
-        self.groups = ChinoAPIGroups(auth, final_url)
-        self.permissions = ChinoAPIPermissions(auth, final_url)
-        self.repositories = ChinoAPIRepositories(auth, final_url)
-        self.schemas = ChinoAPISchemas(auth, final_url)
-        self.documents = ChinoAPIDocuments(auth, final_url)
-        self.blobs = ChinoAPIBlobs(auth, final_url)
-        self.searches = ChinoAPISearches(auth, final_url)
+        self.users = ChinoAPIUsers(auth, final_url, timeout)
+        self.groups = ChinoAPIGroups(auth, final_url, timeout)
+        self.permissions = ChinoAPIPermissions(auth, final_url, timeout)
+        self.repositories = ChinoAPIRepositories(auth, final_url, timeout)
+        self.schemas = ChinoAPISchemas(auth, final_url, timeout)
+        self.documents = ChinoAPIDocuments(auth, final_url, timeout)
+        self.blobs = ChinoAPIBlobs(auth, final_url, timeout)
+        self.searches = ChinoAPISearches(auth, final_url, timeout)

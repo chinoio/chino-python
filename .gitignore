@@ -7,3 +7,4 @@ dist
 .coverage
 outlogo.png
 snippets.py
+*.pyc
