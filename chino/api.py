@@ -583,7 +583,7 @@ class ChinoAPISearches(ChinoAPIBase):
             sort = []
         if not filters:
             filters = []
-        data = dict(schema_id=schema_id, result_type=result_type, filter_type=filter_type, sort=sort, filters=filters)
+        data = dict(schema_id=schema_id, result_type=result_type, filter_type=filter_type, sort=sort, filter=filters)
         return self.apicall('POST', url, data=data)['documents']
 
 
