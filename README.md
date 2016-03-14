@@ -4,7 +4,7 @@
 Docs is available [here](http://docs.chino.io)
 
 ## Install via pip 
-`(sudo) pip install git+https://github.com/chinoio/chino-python.git@release/newversion`
+`(sudo) pip install git+https://github.com/chinoio/chino-python.git`
 
 > this is for the current branch, specify the branch after `@`
 
