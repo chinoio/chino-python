@@ -16,7 +16,7 @@ class BaseChinoTest(unittest.TestCase):
     def setUp(self):
         self.chino = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
                                     url=cfg.url)
-        logging.config.fileConfig('../logging.conf')
+        # logging.config.fileConfig('../logging.conf')
         self.logger = logging.getLogger('test')
         self.logger.setLevel(logging.DEBUG)
 
@@ -86,7 +86,6 @@ class UserChinoTest(BaseChinoTest):
             self.chino.users.delete(user.id, force=True)
 
     def test_list(self):
-
         list = self.chino.users.list(self.us.id)
         self.assertIsNotNone(list.paging)
         self.assertIsNotNone(list.users)
@@ -287,6 +286,7 @@ class UserSchemaChinoTest(BaseChinoTest):
                   dict(name='fieldDateTime', type='datetime')]
         created = self.chino.user_schemas.create('test', fields)
         list = self.chino.user_schemas.list()
+        self.assertGreater(list.paging.count, 0)
         detail = self.chino.user_schemas.detail(list.user_schemas[0].id)
         detail2 = self.chino.user_schemas.detail(created.id)
         self.assertTrue(
