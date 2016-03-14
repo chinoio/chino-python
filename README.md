@@ -6,7 +6,7 @@ Docs is available [here](https://test.chino.io/documentation/docs)
 **This is for the new release of ChinoAPIClient**
 
 ## Install via pip 
-`(sudo) pip install git+https://github.com/chinoio/chino-python-library.git@release/newversion`
+`(sudo) pip install git+https://github.com/chinoio/chino-python.git@release/newversion`
 
 > this is for the current branch, specify the branch after `@`
 
