@@ -578,7 +578,7 @@ class ChinoAPISearches(ChinoAPIBase):
     def __init__(self, auth, url, timeout):
         super(ChinoAPISearches, self).__init__(auth, url, timeout)
 
-    def search(self, schema_id, result_type="FULL_CONTENT", filter_type="and", sort=None, filters=None):
+    def search(self, schema_id, result_type="FULL_CONTENT", filter_type="and", sort=None, filters=None, **kwargs):
         url = 'search'
         if not sort:
             sort = []
@@ -587,7 +587,7 @@ class ChinoAPISearches(ChinoAPIBase):
         data = dict(schema_id=schema_id, result_type=result_type, filter_type=filter_type, filter=filters)
         if sort:
             data['sort']=sort
-        return self.apicall('POST', url, data=data)['documents']
+        return ListResult(Document,self.apicall('POST', url, data=data,params=kwargs))
 
 
 class ChinoAuth(object):
