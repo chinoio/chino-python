@@ -35,8 +35,8 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
         '''
         Init the class, auth is ref, so it can be changed and changes applies to all the other classes.
 
-        :param auth: 
-        :param url: 
+        :param auth:
+        :param url:
         :return:
         '''
         self._url = url
@@ -579,12 +579,14 @@ class ChinoAPISearches(ChinoAPIBase):
         super(ChinoAPISearches, self).__init__(auth, url, timeout)
 
     def search(self, schema_id, result_type="FULL_CONTENT", filter_type="and", sort=None, filters=None):
-        url = 'search/'
+        url = 'search'
         if not sort:
             sort = []
         if not filters:
             filters = []
-        data = dict(schema_id=schema_id, result_type=result_type, filter_type=filter_type, sort=sort, filter=filters)
+        data = dict(schema_id=schema_id, result_type=result_type, filter_type=filter_type, filter=filters)
+        if sort:
+            data['sort']=sort
         return self.apicall('POST', url, data=data)['documents']
 
 
