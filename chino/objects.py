@@ -48,6 +48,7 @@ class Paging(ChinoBaseObject):
         return "Paging [offset:%s,limit:%s,count:%s]" % (self.offset, self.limit, self.count)
 
 
+
 class ListResult(ChinoBaseObject):
     def __init__(self, class_obj, result):
         self.paging = Paging(result['offset'], result['limit'], result['count'], result['total_count'])
@@ -87,6 +88,12 @@ class _DictContent(ChinoBaseObject):
     def id(self):
         return "-"
 
+class IDs(ChinoBaseObject):
+    __str_name__ = 'id'
+    __str_names__ = 'ids'
+
+    def __init__(self, id):
+        self.id = id
 
 class Repository(ChinoBaseObject):
     """

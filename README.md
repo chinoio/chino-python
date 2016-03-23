@@ -16,7 +16,7 @@ First create a variable from the `Chino` class
 
 passing your `customer_id` and `customer_key`
 
-this will give you access to the methods:
+this will give you access to the methods.
 
 ### Init
 
@@ -28,6 +28,17 @@ this will give you access to the methods:
     - customer_token: optional, if specified the auth is as user 
     - if key and token are specified, the auth uses key
     
+    
+### parameter
+The `ChinoAPIClient` accepts the following parameters:
+
+-`customer_id` : see auth section
+-`customer_key` : see auth section
+-`customer_token`:  see auth section
+-`url='https://api.chino.io/'`: the url, deafult is the api. You can also use `api.test.chino.io`
+-`version='v1'`: the verison of the API (we have only v1 so far)
+-`timeout=30`: timeout for the requests. If you want to get an exception if a request takes more than that time.
+- `session=True`: see section on this
     
 ### AUTH
 Class that manages the auth, `chino.auth`
@@ -41,6 +52,11 @@ Class that manages the auth, `chino.auth`
 - `set_auth_admin` to set the auth as admin
 - `set_auth_user` to set the auth as the user
 - `get_auth` to get the Auth object
+
+### requests.Session() 
+To improve the performances the Python SDKs uses `requests` and [`requests.Session()`](http://docs.python-requests.org/en/master/user/advanced/?highlight=session). The session keeps the connection open and does not add overhead on the request.
+This has a *huge* improvment in the performances. It's 4 times faster!
+You can, however, disable this functionality setting `session=False` when creating the `ChinoAPIClient()`
 
 
 ### User
@@ -176,6 +192,8 @@ Beta
 
 - install requirements.txt
 - dev
+- test
+:warning: - the test deletes ALL your repo/schemas/document in the teardown function. **be careful!**
 - create a pull request.
 
 ##Support
