@@ -17,7 +17,7 @@ def read(fname):
 
 
 setup(name='chino',
-      version='beta',
+      version='1.0',
       description='Wrapper for Chino.io API',
       author='Stefano Tranquillini',
       author_email='stefano@chino.io',
@@ -26,7 +26,6 @@ setup(name='chino',
       license = 'CC BY-SA 4.0',
       install_requires=['requests >=2.9.1, <=3'],
       classifiers=[
-          "Development Status :: 4 - Beta",
           "Topic :: Software Development",
       ],
       )

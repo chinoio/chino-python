@@ -65,3 +65,6 @@ outlogo.png
 snippets.py
 *.pyc
 outtest.sh
+tests.xlsx
+~$tests.xlsx
+*.csv

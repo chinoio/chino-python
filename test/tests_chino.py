@@ -287,7 +287,11 @@ class UserSchemaChinoTest(BaseChinoTest):
         created = self.chino.user_schemas.create('test', fields)
         list = self.chino.user_schemas.list()
         self.assertGreater(list.paging.count, 0)
-        detail = self.chino.user_schemas.detail(list.user_schemas[0].id)
+        id = 0
+        for schema in list.user_schemas:
+            if schema.id == created.id:
+                id = schema.id
+        detail = self.chino.user_schemas.detail(id)
         detail2 = self.chino.user_schemas.detail(created.id)
         self.assertTrue(
                 self._equals(detail.to_dict(), detail2.to_dict()),
@@ -491,7 +495,11 @@ class DocumentChinoTest(BaseChinoTest):
                   dict(name='fieldDateTime', type='datetime')]
         created = self.chino.schemas.create(self.repo, 'test', fields)
         list = self.chino.schemas.list(self.repo)
-        detail = self.chino.schemas.detail(list.schemas[0].id)
+        s_id = 0
+        for schema in list.schemas:
+            if schema.id == created.id:
+                s_id = schema.id
+        detail = self.chino.schemas.detail(s_id)
         detail2 = self.chino.schemas.detail(created.id)
         self.assertTrue(
                 self._equals(detail.to_dict(), detail2.to_dict()),
