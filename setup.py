@@ -1,9 +1,8 @@
 import os
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+
+from setuptools import setup
+
 
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
@@ -16,6 +15,7 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
+
 setup(name='chino',
       version='1.0',
       description='Wrapper for Chino.io API',
@@ -26,6 +26,9 @@ setup(name='chino',
       license = 'CC BY-SA 4.0',
       install_requires=['requests >=2.9.1, <=3'],
       classifiers=[
+           "Development Status :: 5 - Stable",
           "Topic :: Software Development",
       ],
       )
+      
+      import os
