@@ -1,11 +1,6 @@
 import os
-
-
 from setuptools import setup
-
-
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
-
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
@@ -30,5 +25,3 @@ setup(name='chino',
           "Topic :: Software Development",
       ],
       )
-      
-      import os
