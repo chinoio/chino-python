@@ -68,3 +68,4 @@ outtest.sh
 tests.xlsx
 ~$tests.xlsx
 *.csv
+ChinoTest.py
