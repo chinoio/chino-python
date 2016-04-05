@@ -403,7 +403,7 @@ class ChinoAPIRepositories(ChinoAPIBase):
         url = "repositories/%s" % repository_id
         return Repository(**self.apicall('PUT', url, data=kwargs)['repository'])
 
-    def delete(self, repository_id, force=False):
+    def delete(self, repository_id, force=False, all_content=False):
         """
         Creates a a repository.
 
@@ -411,10 +411,11 @@ class ChinoAPIRepositories(ChinoAPIBase):
         :return: None
         """
         url = "repositories/%s" % repository_id
+        params = dict()
         if force:
-            params = dict(force='true')
-        else:
-            params = None
+            params['force']='true'
+        if all_content:
+            params['all_content']='true'
         return self.apicall('DELETE', url, params)
 
 
@@ -460,12 +461,13 @@ class ChinoAPISchemas(ChinoAPIBase):
         url = "schemas/%s" % schema_id
         return Schema(**self.apicall('PUT', url, data=kwargs)['schema'])
 
-    def delete(self, schema_id, force=False):
+    def delete(self, schema_id, force=False, all_content=False):
         url = "schemas/%s" % schema_id
+        params = dict()
         if force:
-            params = dict(force='true')
-        else:
-            params = None
+            params['force']='true'
+        if all_content:
+            params['all_content']='true'
         return self.apicall('DELETE', url, params)
 
 

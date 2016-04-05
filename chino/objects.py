@@ -9,7 +9,7 @@ class ChinoBaseObject(object):
     __str_names__ = 'not set'
 
     @property
-    def id(self):
+    def _id(self):
         return '-'
 
     def to_json(self):
@@ -82,10 +82,11 @@ class _DictContent(ChinoBaseObject):
 
     def __init__(self, *args, **kwargs):
         for k, v in kwargs.iteritems():
+            print "%s %s" %(k,v)
             self.__setattr__(k, v)
 
     @property
-    def id(self):
+    def _id(self):
         return "-"
 
 class IDs(ChinoBaseObject):
@@ -113,7 +114,7 @@ class Repository(ChinoBaseObject):
     __str_names__ = 'repositories'
 
     @property
-    def id(self):
+    def _id(self):
         return self.repository_id
 
     def __init__(self, repository_id=None, insert_date=None, last_update=None, description=None, is_active=True):
@@ -152,7 +153,7 @@ class User(ChinoBaseObject):
     __str_names__ = 'users'
 
     @property
-    def id(self):
+    def _id(self):
         return self.user_id
 
     def to_dict(self):
@@ -202,7 +203,7 @@ class Group(ChinoBaseObject):
     __str_names__ = 'groups'
 
     @property
-    def id(self):
+    def _id(self):
         return self.group_id
 
     def to_dict(self):
@@ -248,7 +249,7 @@ class Document(ChinoBaseObject):
     __str_names__ = 'documents'
 
     @property
-    def id(self):
+    def _id(self):
         return self.document_id
 
     def to_dict(self):
@@ -279,7 +280,7 @@ class _Field(ChinoBaseObject):
     __str_names__ = 'fields'
 
     @property
-    def id(self):
+    def _id(self):
         return '-'
 
 
@@ -350,7 +351,7 @@ class Schema(ChinoBaseObject):
     #     return res
 
     @property
-    def id(self):
+    def _id(self):
         return self.schema_id
 
     def __init__(self, schema_id=None, description=None, repository_id=None, is_active=None, insert_date=None,
@@ -392,7 +393,7 @@ class UserSchema(ChinoBaseObject):
     #     return res
 
     @property
-    def id(self):
+    def _id(self):
         return self.user_schema_id
 
     def __init__(self, user_schema_id=None, description=None, is_active=None, insert_date=None,
@@ -427,7 +428,7 @@ class Collection(ChinoBaseObject):
     __str_names__ = 'collections'
 
     @property
-    def id(self):
+    def _id(self):
         return self.collection_id
 
     def __init__(self, collection_id=None, name=None, insert_date=None, last_update=True,
@@ -477,7 +478,7 @@ class Permission(ChinoBaseObject):
     __str_names__ = 'permissions'
 
     @property
-    def id(self):
+    def _id(self):
         return "-"
 
     def __init__(self, access=None, permission=None, resource_type=None, resource_id=None, parent_id=None):
@@ -507,7 +508,7 @@ class _PermissionField(ChinoBaseObject):
     # TODO: support functions to help in managing grants
 
     @property
-    def id(self):
+    def _id(self):
         return "-"
 
     def to_dict(self):
@@ -525,7 +526,7 @@ class _SortField(ChinoBaseObject):
         self.order = order
 
     @property
-    def id(self):
+    def _id(self):
         return "-"
 
 
@@ -537,7 +538,7 @@ class _FilterField(ChinoBaseObject):
         self.value = value
 
     @property
-    def id(self):
+    def _id(self):
         return "-"
 
 
