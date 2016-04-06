@@ -82,7 +82,6 @@ class _DictContent(ChinoBaseObject):
 
     def __init__(self, *args, **kwargs):
         for k, v in kwargs.iteritems():
-            print "%s %s" %(k,v)
             self.__setattr__(k, v)
 
     @property
