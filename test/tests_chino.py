@@ -1,8 +1,10 @@
 import time
+
 import cfg
 from chino.api import ChinoAPIClient
 from chino.exceptions import CallError
 from chino.objects import _DictContent, _Field
+
 
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
@@ -15,7 +17,7 @@ import hashlib
 class BaseChinoTest(unittest.TestCase):
     def setUp(self):
         self.chino = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
-                                    url=cfg.url)
+                                    url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret)
         logging.config.fileConfig('../logging.conf')
         self.logger = logging.getLogger('test')
         self.logger.setLevel(logging.DEBUG)
@@ -81,9 +83,12 @@ class UserChinoTest(BaseChinoTest):
     def tearDown(self):
         # if user has been created we remove it.
         self.logger.debug("tearing down %s", self.user)
+        self.chino.auth.set_auth_admin()
         list = self.chino.users.list(self.us._id)
         for user in list.users:
             self.chino.users.delete(user._id, force=True)
+        self.chino.user_schemas.delete(self.us._id, force=True)
+
 
     def test_list(self):
         list = self.chino.users.list(self.us._id)
@@ -127,11 +132,12 @@ class UserChinoTest(BaseChinoTest):
         self.assertEqual(ste_4.attributes.first_name, EDIT)
         # current not working for main user
         self.assertRaises(CallError, self.chino.users.current)
-
         # login
         self.chino.users.login(EDIT, '12345678')
         ste_2 = self.chino.users.current()
         self.assertEqual(ste_2.username, EDIT)
+
+        self.chino.users.refresh()
 
         # now should be impossible to create the user
         self.assertRaises(CallError, self.chino.users.create, self.us._id, username='error', password='12345678',
@@ -142,11 +148,28 @@ class UserChinoTest(BaseChinoTest):
         self.assertRaises(CallError, self.chino.users.current)
 
         self.assertRaises(Exception, self.chino.users.login, EDIT, '')
-
         # rest to admin to delete it
         self.chino.auth.set_auth_admin()
         # this invalidates the user
         self.chino.users.delete(user._id)
+
+
+class ApplicationsChinoTest(BaseChinoTest):
+    user = None
+
+    def setUp(self):
+        super(ApplicationsChinoTest, self).setUp()
+
+    def tearDown(self):
+        # if user has been created we remove it.
+        self.logger.debug("tearing down %s", self.user)
+
+    def test_CRUD(self):
+        app = self.chino.applications.create(name='tessst', grant_type='password')
+        app1 = self.chino.applications.detail(app._id)
+        self.chino.applications.update(app1._id, name='asds')
+        app2 = self.chino.applications.detail(app1._id)
+        self.chino.applications.delete(app1._id, force=True)
 
 
 class GroupChinoTest(BaseChinoTest):
@@ -213,14 +236,14 @@ class RepositoryChinoTest(BaseChinoTest):
         self.assertEqual(created.description, 'test')
         first = self.chino.repositories.list().repositories[0]
         self.assertTrue(
-                self._equals(created.to_dict(), first.to_dict()),
-                "\n %s \n %s \n" % (created.to_json(), first.to_json()))
+            self._equals(created.to_dict(), first.to_dict()),
+            "\n %s \n %s \n" % (created.to_json(), first.to_json()))
         first.description = 'edited'
 
         resp = self.chino.repositories.update(first._id, description=first.description)
         detail = self.chino.repositories.detail(first._id)
         self.assertTrue(
-                self._equals(resp.to_dict(), detail.to_dict()), "\n %s \n %s \n" % (resp.to_json(), detail.to_json()))
+            self._equals(resp.to_dict(), detail.to_dict()), "\n %s \n %s \n" % (resp.to_json(), detail.to_json()))
 
         self.chino.repositories.delete(first._id)
 
@@ -250,8 +273,8 @@ class SchemaChinoTest(BaseChinoTest):
         detail = self.chino.schemas.detail(list.schemas[0]._id)
         detail2 = self.chino.schemas.detail(created._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
 
         detail.structure.fields.append(_Field('string', 'new one'))
         data = detail.to_dict()
@@ -261,8 +284,8 @@ class SchemaChinoTest(BaseChinoTest):
         self.chino.schemas.update(**data)
         detail2 = self.chino.schemas.detail(detail._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
         self.chino.schemas.delete(detail._id)
 
 
@@ -294,8 +317,8 @@ class UserSchemaChinoTest(BaseChinoTest):
         detail = self.chino.user_schemas.detail(id)
         detail2 = self.chino.user_schemas.detail(created._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
 
         detail.structure.fields.append(_Field('string', 'new one'))
         data = detail.to_dict()
@@ -306,8 +329,8 @@ class UserSchemaChinoTest(BaseChinoTest):
         self.chino.user_schemas.update(detail.user_schema_id, **data)
         detail2 = self.chino.user_schemas.detail(detail._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
         self.chino.user_schemas.delete(detail._id)
 
 
@@ -331,8 +354,8 @@ class CollectionChinoTest(BaseChinoTest):
         detail = self.chino.collections.detail(list.collections[0]._id)
         detail2 = self.chino.collections.detail(created._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
 
         self.chino.collections.update(detail._id, name='test2')
         detail2 = self.chino.collections.detail(detail._id)
@@ -375,7 +398,7 @@ class CollectionChinoTest(BaseChinoTest):
         l = self.chino.collections.list_documents(collection._id)
         self.assertEqual(l.paging.count, 0)
 
-        #         delete
+        # delete
         self.chino.documents.delete(document._id, force=True)
         self.chino.schemas.delete(schema, force=True)
         self.chino.repositories.delete(repo, force=True)
@@ -387,7 +410,7 @@ class PermissionChinoTest(BaseChinoTest):
         super(PermissionChinoTest, self).setUp()
         # list = self.chino.users.list()
         # for u in list.users:
-        #     self.chino.users.delete(u._id,force=True)
+        # self.chino.users.delete(u._id,force=True)
 
     def test_premissions(self):
         # create user via userschema
@@ -502,8 +525,8 @@ class DocumentChinoTest(BaseChinoTest):
         detail = self.chino.schemas.detail(s_id)
         detail2 = self.chino.schemas.detail(created._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
 
         detail.structure.fields.append(_Field('string', 'new one'))
         # delete repository_id
@@ -514,8 +537,8 @@ class DocumentChinoTest(BaseChinoTest):
         self.chino.schemas.update(**data)
         detail2 = self.chino.schemas.detail(detail._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
         self.chino.schemas.delete(detail._id)
 
 
@@ -567,9 +590,9 @@ class SearchChinoTest(BaseChinoTest):
 
 
 # class PermissionChinoTest(BaseChinoTest):
-#     def setUp(self):
-#         super(PermissionChinoTest, self).setUp()
-#         self.user = self.chino.users.create(username='ste', password='12345678',
+# def setUp(self):
+# super(PermissionChinoTest, self).setUp()
+# self.user = self.chino.users.create(username='ste', password='12345678',
 #                                             attributes=dict(first_name='john', last_name='doe',
 #                                                             email='test@chino.io'))
 #         self.group = self.chino.groups.create('testing', attributes=dict(hospital='test'))

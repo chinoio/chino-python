@@ -9,15 +9,15 @@ client for Chino.io API
 import hashlib
 import json
 import os
+import logging
 
 import requests
-from requests.auth import HTTPBasicAuth
+from requests.auth import HTTPBasicAuth, AuthBase
 
 from exceptions import MethodNotSupported, CallError, CallFail, ClientError
 from objects import Repository, ListResult, User, Group, Schema, Document, Blob, BlobDetail, UserSchema, \
-    Collection, Permission, IDs
+    Collection, Permission, IDs, Application
 
-import logging
 
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
@@ -33,7 +33,7 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
     timeout = 30
 
 
-    def __init__(self, auth, url, timeout,session=True):
+    def __init__(self, auth, url, timeout, session=True):
         '''
         Init the class, auth is ref, so it can be changed and changes applies to all the other classes.
 
@@ -48,10 +48,9 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
             self.req = requests.Session()
         else:
             self.req = requests
-    #
 
     # UTILS
-    def apicall(self, method, url, params=None, data=None):
+    def apicall(self, method, url, params=None, data=None, form=None):
         method = method.upper()
         url = self._url + url
         if method == 'CHUNK':
@@ -62,7 +61,7 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
             if method == 'GET':
                 res = self._apicall_get(url, params)
             elif method == 'POST':
-                res = self._apicall_post(url, data, params)
+                res = self._apicall_post(url, data, params, form)
             elif method == 'PUT':
                 res = self._apicall_put(url, data)
             elif method == 'DELETE':
@@ -102,12 +101,15 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
         r = self.req.patch(url, auth=self._get_auth(), data=json.dumps(d), timeout=self.timeout)
         return r
 
-    def _apicall_post(self, url, data, params):
-        if hasattr(data, 'to_dict()'):
-            d = data.to_dict()
+    def _apicall_post(self, url, data, params, form=None):
+        if data is None and form is not None:
+            r = self.req.post(url, auth=self._get_auth(), params=params, data=form, timeout=self.timeout)
         else:
-            d = data
-        r = self.req.post(url, auth=self._get_auth(), params=params, data=json.dumps(d), timeout=self.timeout)
+            if hasattr(data, 'to_dict()'):
+                d = data.to_dict()
+            else:
+                d = data
+            r = self.req.post(url, auth=self._get_auth(), params=params, data=json.dumps(d), timeout=self.timeout)
         return r
 
     def _apicall_get(self, url, params):
@@ -140,38 +142,72 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
 
 
 class ChinoAPIUsers(ChinoAPIBase):
-    def __init__(self, auth, url, timeout,session=True):
-        super(ChinoAPIUsers, self).__init__(auth, url, timeout,session)
+    def __init__(self, auth, url, timeout, session=True):
+        super(ChinoAPIUsers, self).__init__(auth, url, timeout, session)
 
-    def login(self, username, password, customer_id=None):
+    def login(self, username, password, client_id=None, client_secret=None):
         # remove auth and save in temp var (in case of problems)
 
         auth = self.auth
         # self.auth = None
-        url = "auth/login"
-        if not customer_id:
-            customer_id = self.auth.customer_id
-        pars = dict(username=username, password=password, customer_id=customer_id)
+        url = "auth/token/"
+        if not client_id:
+            client_id = self.auth.client_id
+        if not client_secret:
+            client_secret = self.auth.client_secret
+        pars = dict(username=username, password=password, grant_type='password')
         try:
-            user = self.apicall('POST', url, data=pars)['user']
-            self.auth.access_token = user['access_token']
+            self.auth.set_auth_application()
+            result = self.apicall('POST', url, form=pars)
+            self.auth.refresh_token = result['refresh_token']
+            self.auth.bearer_token = result['access_token']
             self.auth.set_auth_user()
-            return user
+            return result
         except Exception as ex:
             # reset auth if things go wrong
             self.auth = auth
             # propagate exception
             raise ex
 
+    def refresh(self):
+        # remove auth and save in temp var (in case of problems)
+        auth = self.auth
+        # self.auth = None
+        url = "auth/token/"
+        pars = dict(grant_type='refresh_token', client_id=self.auth.client_id, client_secret=self.auth.client_secret,
+                    refresh_token=self.auth.refresh_token)
+        try:
+            self.auth.set_auth_null()
+            result = self.apicall('POST', url, form=pars)
+            self.auth.refresh_token = result['refresh_token']
+            self.auth.bearer_token = result['access_token']
+            self.auth.set_auth_user()
+            return result
+        except Exception as ex:
+            # reset auth if things go wrong
+            self.auth = auth
+            # propagate exception
+            raise ex
+
+
     def current(self):
-        url = "auth/info"
+        url = "users"
         return User(**self.apicall('GET', url)['user'])
 
     def logout(self):
-        url = "auth/logout"
-        return self.apicall('POST', url)
-
-        # USER
+        url = "auth/revoke_token/"
+        auth = self.auth
+        pars = dict(client_id=self.auth.client_id, client_secret=self.auth.client_secret,
+                    token=self.auth.bearer_token)
+        try:
+            self.auth.set_auth_null()
+            result = self.apicall('POST', url, form=pars)
+            return result
+        except Exception as ex:
+            # reset auth if things go wrong
+            self.auth = auth
+            # propagate exception
+            raise ex
 
     def list(self, user_schema_id, **pars):
         url = "user_schemas/%s/users" % user_schema_id
@@ -206,8 +242,8 @@ class ChinoAPIUsers(ChinoAPIBase):
 
 
 class ChinoAPIGroups(ChinoAPIBase):
-    def __init__(self, auth, url, timeout,session=True):
-        super(ChinoAPIGroups, self).__init__(auth, url, timeout,session)
+    def __init__(self, auth, url, timeout, session=True):
+        super(ChinoAPIGroups, self).__init__(auth, url, timeout, session)
 
     def list(self, **pars):
         url = "groups"
@@ -244,8 +280,8 @@ class ChinoAPIGroups(ChinoAPIBase):
 
 
 class ChinoAPIPermissions(ChinoAPIBase):
-    def __init__(self, auth, url, timeout,session=True):
-        super(ChinoAPIPermissions, self).__init__(auth, url, timeout,session)
+    def __init__(self, auth, url, timeout, session=True):
+        super(ChinoAPIPermissions, self).__init__(auth, url, timeout, session)
 
     def resources(self, action, resource_type, subject_type, subject_id, manage=None, authorize=None):
         url = "perms/%s/%s/%s/%s" % (action, resource_type, subject_type, subject_id)
@@ -295,38 +331,38 @@ class ChinoAPIPermissions(ChinoAPIBase):
         return [Permission(**p) for p in self.apicall('GET', url)['permissions']]
 
         # def user(self, user_id):
-        #     url = "perms/users/%s" % user_id
-        #     return self.apicall('GET', url)
+        # url = "perms/users/%s" % user_id
+        # return self.apicall('GET', url)
         #
         # def create_user(self, schema_id, user_id, own_data, all_data, insert=True):
-        #     data = dict(permissions=dict(own_data=own_data, all_data=all_data, insert=insert))
-        #     url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
-        #     return self.apicall('POST', url, data=data)
+        # data = dict(permissions=dict(own_data=own_data, all_data=all_data, insert=insert))
+        # url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
+        # return self.apicall('POST', url, data=data)
         #
         # def delete_user(self, schema_id, user_id):
-        #     url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
-        #     return self.apicall('DELETE', url)
+        # url = "perms/schemas/%s/users/%s" % (schema_id, user_id)
+        # return self.apicall('DELETE', url)
         #
         # def group(self, group_id):
-        #     url = "perms/groups/%s" % group_id
-        #     return self.apicall('GET', url)
+        # url = "perms/groups/%s" % group_id
+        # return self.apicall('GET', url)
         #
         # def schema(self, schema_id):
-        #     url = "perms/schemas/%s" % schema_id
-        #     return self.apicall('GET', url)
+        # url = "perms/schemas/%s" % schema_id
+        # return self.apicall('GET', url)
         #
         # def create_group(self, schema_id, group_id, own_data, all_data, insert=True):
-        #     data = dict(permissions=dict(own_data=own_data, all_data=all_data, insert=insert))
-        #     url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
-        #     return self.apicall('POST', url, data=data)
+        # data = dict(permissions=dict(own_data=own_data, all_data=all_data, insert=insert))
+        # url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
+        # return self.apicall('POST', url, data=data)
         #
         # def delete_group(self, schema_id, group_id):
-        #     url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
-        #     return self.apicall('DELETE', url)
+        # url = "perms/schemas/%s/groups/%s" % (schema_id, group_id)
+        # return self.apicall('DELETE', url)
 
 
         # def user(self, user_id):
-        #     url = "perms/users/%s" % user_id
+        # url = "perms/users/%s" % user_id
         #     return self.apicall('GET', url)
         #
         # def create_user(self, schema_id, user_id, own_data, all_data, insert=True):
@@ -357,8 +393,8 @@ class ChinoAPIPermissions(ChinoAPIBase):
 
 
 class ChinoAPIRepositories(ChinoAPIBase):
-    def __init__(self, auth, url, timeout,session=True):
-        super(ChinoAPIRepositories, self).__init__(auth, url, timeout,session)
+    def __init__(self, auth, url, timeout, session=True):
+        super(ChinoAPIRepositories, self).__init__(auth, url, timeout, session)
 
     def list(self, **pars):
         """
@@ -413,15 +449,15 @@ class ChinoAPIRepositories(ChinoAPIBase):
         url = "repositories/%s" % repository_id
         params = dict()
         if force:
-            params['force']='true'
+            params['force'] = 'true'
         if all_content:
-            params['all_content']='true'
+            params['all_content'] = 'true'
         return self.apicall('DELETE', url, params)
 
 
 class ChinoAPISchemas(ChinoAPIBase):
-    def __init__(self, auth, url, timeout,session=True):
-        super(ChinoAPISchemas, self).__init__(auth, url, timeout,session)
+    def __init__(self, auth, url, timeout, session=True):
+        super(ChinoAPISchemas, self).__init__(auth, url, timeout, session)
 
     def list(self, repository_id, **pars):
         """
@@ -465,15 +501,15 @@ class ChinoAPISchemas(ChinoAPIBase):
         url = "schemas/%s" % schema_id
         params = dict()
         if force:
-            params['force']='true'
+            params['force'] = 'true'
         if all_content:
-            params['all_content']='true'
+            params['all_content'] = 'true'
         return self.apicall('DELETE', url, params)
 
 
 class ChinoAPIDocuments(ChinoAPIBase):
-    def __init__(self, auth, url, timeout,session=True):
-        super(ChinoAPIDocuments, self).__init__(auth, url, timeout,session)
+    def __init__(self, auth, url, timeout, session=True):
+        super(ChinoAPIDocuments, self).__init__(auth, url, timeout, session)
 
     def list(self, schema_id, full_document=False, **pars):
         url = "schemas/%s/documents" % schema_id
@@ -506,8 +542,8 @@ class ChinoAPIDocuments(ChinoAPIBase):
 
 class ChinoAPIBlobs(ChinoAPIBase):
     # TODO: update to new format
-    def __init__(self, auth, url, timeout,session=True):
-        super(ChinoAPIBlobs, self).__init__(auth, url, timeout,session)
+    def __init__(self, auth, url, timeout, session=True):
+        super(ChinoAPIBlobs, self).__init__(auth, url, timeout, session)
 
     def send(self, document_id, blob_field_name, file_path, chunk_size=12 * 1024):
         if not os.path.exists(file_path):
@@ -565,7 +601,7 @@ class ChinoAPIBlobs(ChinoAPIBase):
         # here we use directly request library to implement the binary
         url = 'blobs/%s' % upload_id
         # url = "http://httpbin.org/put"
-        return self.apicall('CHUNK', url, data=data,params=dict(length=length,offset=offset))['blob']
+        return self.apicall('CHUNK', url, data=data, params=dict(length=length, offset=offset))['blob']
 
 
     def commit(self, upload_id):
@@ -587,8 +623,8 @@ class ChinoAPIBlobs(ChinoAPIBase):
 
 
 class ChinoAPISearches(ChinoAPIBase):
-    def __init__(self, auth, url, timeout,session=True):
-        super(ChinoAPISearches, self).__init__(auth, url, timeout,session)
+    def __init__(self, auth, url, timeout, session=True):
+        super(ChinoAPISearches, self).__init__(auth, url, timeout, session)
 
     def search(self, schema_id, result_type="FULL_CONTENT", filter_type="and", sort=None, filters=None, **kwargs):
         url = 'search'
@@ -610,43 +646,64 @@ class ChinoAPISearches(ChinoAPIBase):
 class ChinoAuth(object):
     customer_id = None
     customer_key = None
-    access_token = None
-    ACCESS_TOKEN = 'ACCESS_TOKEN'
+    client_id = None
+    client_secret = None
+    bearer_token = None
     __auth = None
 
-    # TODO: write docstring
-    def __init__(self, customer_id, customer_key=None, access_token=None):
+    def __init__(self, customer_id, customer_key=None, bearer_token=None, client_id=None, client_secret=None):
         '''
         Init the class
 
         :param customer_id: mandatory
         :param customer_key: optional, if specified the auth is set as chino customer (admin)
-        :param access_token: optional, if specified the auth is as user
+        :param bearer_token: optional, if specified the auth is as user
         :return: the class
         '''
         self.customer_id = customer_id
         self.customer_key = customer_key
-        self.access_token = access_token
+        self.bearer_token = bearer_token
+        self.client_id = client_id
+        self.client_secret = client_secret
         # if customer_key is set, then set auth as that
         if customer_key:
             self.set_auth_admin()
         # if access_token is set, then use it as customer
-        elif access_token:
+        elif bearer_token:
             self.set_auth_user()
+        elif client_id and client_secret:
+            self.set_auth_application()
 
     def set_auth_admin(self):
         self.__auth = HTTPBasicAuth(self.customer_id, self.customer_key)
 
     def set_auth_user(self):
-        self.__auth = HTTPBasicAuth(self.ACCESS_TOKEN, self.access_token)
+        self.__auth = HTTPBearerAuth(self.bearer_token)
+
+    def set_auth_null(self):
+        self.__auth = None
+
+    def set_auth_application(self):
+        self.__auth = HTTPBasicAuth(self.client_id, self.client_secret)
 
     def get_auth(self):
         return self.__auth
 
 
+class HTTPBearerAuth(AuthBase):
+    """Attaches HTTP Basic Authentication to the given Request object."""
+
+    def __init__(self, bearer_token):
+        self.bearer_token = bearer_token
+
+    def __call__(self, r):
+        r.headers['Authorization'] = 'Bearer %s' % self.bearer_token
+        return r
+
+
 class ChinoAPIUserSchemas(ChinoAPIBase):
-    def __init__(self, auth, url, timeout,session=True):
-        super(ChinoAPIUserSchemas, self).__init__(auth, url, timeout,session)
+    def __init__(self, auth, url, timeout, session=True):
+        super(ChinoAPIUserSchemas, self).__init__(auth, url, timeout, session)
 
     def list(self, **pars):
         """
@@ -700,8 +757,8 @@ class ChinoAPIUserSchemas(ChinoAPIBase):
 
 
 class ChinoAPICollections(ChinoAPIBase):
-    def __init__(self, auth, url, timeout,session=True):
-        super(ChinoAPICollections, self).__init__(auth, url, timeout,session)
+    def __init__(self, auth, url, timeout, session=True):
+        super(ChinoAPICollections, self).__init__(auth, url, timeout, session)
 
     def list(self, **pars):
         """
@@ -764,6 +821,54 @@ class ChinoAPICollections(ChinoAPIBase):
         return ListResult(Collection, self.apicall('POST', url, params=pars, data=data))
 
 
+class ChinoAPIApplication(ChinoAPIBase):
+    def __init__(self, auth, url, timeout, session=True):
+        super(ChinoAPIApplication, self).__init__(auth, url, timeout, session)
+
+    def list(self, **pars):
+        """
+        Gets the list of Application
+
+        :param: usual for a list ``offset``, ``limit``
+        :return: dict containing ``count``,``total_count``,``limit``,``offset``,``repositories``
+        """
+        url = "auth/application"
+        return ListResult(Application, self.apicall('GET', url, params=pars))
+
+    def create(self, name, grant_type='password', redirect_url=''):
+        """
+        Creates a Application
+
+        :param name: (str) the name of the Application
+        :return: (dict) the Application.
+        """
+        data = dict(name=name, grant_type=grant_type, redirect_url=redirect_url)
+        url = "auth/application"
+        return Application(**self.apicall('POST', url, data=data))
+
+    def detail(self, application_id):
+        """
+        Details of a Application
+
+        :param application_id: (id) of the Application
+        :return: (dict) the Application.
+        """
+        url = "auth/application/%s" % application_id
+        return Application(**self.apicall('GET', url))
+
+    def update(self, application_id, **kwargs):
+        url = "auth/application/%s" % application_id
+        return Application(**self.apicall('PUT', url, data=kwargs))
+
+    def delete(self, application_id, force=False):
+        url = "auth/application/%s" % application_id
+        if force:
+            params = dict(force='true')
+        else:
+            params = None
+        return self.apicall('DELETE', url, params)
+
+
 class ChinoAPIClient(object):
     """
     ChinoAPI the client class
@@ -771,36 +876,36 @@ class ChinoAPIClient(object):
     final_url = ""
     users = groups = permissions = repositories = schemas = documents = blobs = searches = None
 
-    # TODO: change to prod url when ready
-    def __init__(self, customer_id, customer_key=None, customer_token=None, version='v1',
-                 url='https://api.chino.io/', timeout=30, session=True):
-        '''
+    def __init__(self, customer_id, customer_key=None, bearer_token=None, client_id=None, client_secret=None,
+                 version='v1', url='https://api.chino.io/', timeout=30, session=True):
+        """
         Init the class
 
         :param customer_id: mandatory
         :param customer_key: optional, if specified the auth is set as chino customer (admin)
-        :param customer_token: optional, if specified the auth is as user
+        :param bearer_token: optional, if specified the auth is as user
         :param version: default is `v1`, change if you know what to do
         :param url: the url, this should be changed only for testing
         :return: the class
-        '''
+        """
 
-        # smarter wayt o add slash?
+        # smarter way to add slash?
         if not url.endswith('/'):
             url += '/'
         if not version.endswith('/'):
             version += '/'
         final_url = url + version
         self.final_url = final_url
-        auth = ChinoAuth(customer_id, customer_key, customer_token)
+        auth = ChinoAuth(customer_id, customer_key, bearer_token, client_id, client_secret)
         self.auth = auth
-        self.users = ChinoAPIUsers(auth, final_url, timeout=timeout,session=session)
-        self.groups = ChinoAPIGroups(auth, final_url, timeout=timeout,session=session)
-        self.permissions = ChinoAPIPermissions(auth, final_url, timeout=timeout,session=session)
-        self.repositories = ChinoAPIRepositories(auth, final_url, timeout=timeout,session=session)
-        self.schemas = ChinoAPISchemas(auth, final_url, timeout=timeout,session=session)
-        self.user_schemas = ChinoAPIUserSchemas(auth, final_url, timeout=timeout,session=session)
-        self.collections = ChinoAPICollections(auth, final_url, timeout=timeout,session=session)
-        self.documents = ChinoAPIDocuments(auth, final_url, timeout=timeout,session=session)
-        self.blobs = ChinoAPIBlobs(auth, final_url, timeout=timeout,session=session)
-        self.searches = ChinoAPISearches(auth, final_url, timeout=timeout,session=session)
+        self.users = ChinoAPIUsers(auth, final_url, timeout=timeout, session=session)
+        self.applications = ChinoAPIApplication(auth, final_url, timeout=timeout, session=session)
+        self.groups = ChinoAPIGroups(auth, final_url, timeout=timeout, session=session)
+        self.permissions = ChinoAPIPermissions(auth, final_url, timeout=timeout, session=session)
+        self.repositories = ChinoAPIRepositories(auth, final_url, timeout=timeout, session=session)
+        self.schemas = ChinoAPISchemas(auth, final_url, timeout=timeout, session=session)
+        self.user_schemas = ChinoAPIUserSchemas(auth, final_url, timeout=timeout, session=session)
+        self.collections = ChinoAPICollections(auth, final_url, timeout=timeout, session=session)
+        self.documents = ChinoAPIDocuments(auth, final_url, timeout=timeout, session=session)
+        self.blobs = ChinoAPIBlobs(auth, final_url, timeout=timeout, session=session)
+        self.searches = ChinoAPISearches(auth, final_url, timeout=timeout, session=session)
