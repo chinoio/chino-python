@@ -844,7 +844,7 @@ class ChinoAPIApplication(ChinoAPIBase):
         """
         data = dict(name=name, grant_type=grant_type, redirect_url=redirect_url)
         url = "auth/application"
-        return Application(**self.apicall('POST', url, data=data))
+        return Application(**self.apicall('POST', url, data=data)[Application.__str_name__])
 
     def detail(self, application_id):
         """
@@ -854,11 +854,11 @@ class ChinoAPIApplication(ChinoAPIBase):
         :return: (dict) the Application.
         """
         url = "auth/application/%s" % application_id
-        return Application(**self.apicall('GET', url))
+        return Application(**self.apicall('GET', url)[Application.__str_name__])
 
     def update(self, application_id, **kwargs):
         url = "auth/application/%s" % application_id
-        return Application(**self.apicall('PUT', url, data=kwargs))
+        return Application(**self.apicall('PUT', url, data=kwargs)[Application.__str_name__])
 
     def delete(self, application_id, force=False):
         url = "auth/application/%s" % application_id
