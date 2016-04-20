@@ -169,6 +169,7 @@ class ApplicationsChinoTest(BaseChinoTest):
         app1 = self.chino.applications.detail(app._id)
         self.chino.applications.update(app1._id, name='asds')
         app2 = self.chino.applications.detail(app1._id)
+        apps = self.chino.applications.list()
         self.chino.applications.delete(app1._id, force=True)
 
 

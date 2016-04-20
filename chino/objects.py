@@ -320,7 +320,10 @@ class Schema(ChinoBaseObject):
                     "name": "test_boolean"
                   },
                   {
-                    "type": "date",
+                    "type": "dgit+https://github.com/chinoio/chino-python-library.git@develop
+git+https://github.com/chinoio/chino-python-library.git@develop
+git+https://github.com/chinoio/chino-python-library.git@develop
+ate",
                     "name": "test_date"
                   },
                   {
