@@ -308,7 +308,7 @@ class UserSchemaChinoTest(BaseChinoTest):
         self.assertTrue(
                 self._equals(detail.to_dict(), detail2.to_dict()),
                 "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
-        self.chino.user_schemas.delete(detail._id)
+        self.chino.user_schemas.delete(detail._id, force=True)
 
 
 class CollectionChinoTest(BaseChinoTest):
@@ -516,7 +516,7 @@ class DocumentChinoTest(BaseChinoTest):
         self.assertTrue(
                 self._equals(detail.to_dict(), detail2.to_dict()),
                 "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
-        self.chino.schemas.delete(detail._id)
+        self.chino.schemas.delete(detail._id,force=True)
 
 
 class BlobChinoTest(BaseChinoTest):

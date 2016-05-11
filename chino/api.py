@@ -18,11 +18,13 @@ from objects import Repository, ListResult, User, Group, Schema, Document, Blob,
     Collection, Permission, IDs
 
 import logging
+import logging.config
 
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
-logger = logging.getLogger('chino')
-
+logger = logging.getLogger(__name__)
+# logging.config.fileConfig('../logging.conf')
+logger.setLevel(logging.DEBUG)
 
 class ChinoAPIBase(object):  # PRAGMA: NO COVER
     '''
@@ -48,6 +50,7 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
             self.req = requests.Session()
         else:
             self.req = requests
+
     #
 
     # UTILS
@@ -182,7 +185,7 @@ class ChinoAPIUsers(ChinoAPIBase):
         return User(**self.apicall('GET', url)['user'])
 
     def create(self, user_schema_id, username, password, attributes=None):
-        data = dict(username=username, password=password, attributes=attributes, )
+        data = dict(username=username, password=password, attributes=attributes )
         url = "user_schemas/%s/users" % user_schema_id
         return User(**self.apicall('POST', url, data=data)['user'])
 
