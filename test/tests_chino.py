@@ -432,20 +432,20 @@ class PermissionChinoTest(BaseChinoTest):
                                        attributes=dict(first_name='john', last_name='doe',
                                                        email='test@chino.io'))
         self.chino.permissions.resources('grant', 'repositories', 'users', user._id, manage=['R'])
-        self.chino.users.login(username, '12345678', cfg.customer_id)
+        self.chino.users.login(username, '12345678')
         permissions = self.chino.permissions.read_perms()
         self.assertTrue(permissions[0].permission.manage == ['R'])
         self.chino.users.logout()
         self.chino.auth.set_auth_admin()
         self.chino.permissions.resource('grant', 'documents', document._id, 'users', user._id, manage=['R', 'U'])
-        self.chino.users.login(username, '12345678', cfg.customer_id)
+        self.chino.users.login(username, '12345678')
         permissions = self.chino.permissions.read_perms_document(document._id)
         self.assertTrue(permissions[0].permission.manage == ['R', 'U'])
         self.chino.users.logout()
         self.chino.auth.set_auth_admin()
         self.chino.permissions.resource_children('grant', 'schemas', schema, 'documents', 'users', user._id,
                                                  manage=['R', 'U', 'L'], authorize=['A'])
-        self.chino.users.login(username, '12345678', cfg.customer_id)
+        self.chino.users.login(username, '12345678')
         permissions = self.chino.permissions.read_perms()
         # 0 is the one above
         self.assertTrue(permissions[1].permission.manage == ['R', 'U', 'L'])
@@ -504,6 +504,7 @@ class DocumentChinoTest(BaseChinoTest):
                        fieldString='test', fieldBool=False, fieldDate='2015-02-19',
                        fieldDateTime='2015-02-19T16:39:47')
         self.chino.documents.update(document._id, content=content)
+        document = self.chino.documents.detail(document._id)
         document = self.chino.documents.detail(document._id)
         self.assertEqual(123, document.content.fieldInt)
         self.chino.documents.update(document._id,

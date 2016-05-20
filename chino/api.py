@@ -50,7 +50,7 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
             self.req = requests
 
     # UTILS
-    def apicall(self, method, url, params=None, data=None, form=None):
+    def apicall(self, method, url, params=None, data=None, form=None, raw=False):
         method = method.upper()
         url = self._url + url
         if method == 'CHUNK':
@@ -70,14 +70,15 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
                 res = self._apicall_patch(url, data)
             else:
                 raise MethodNotSupported
-        self.valid_call(res)
-        # try:
-        # if result has data
-        ret = res.json()
-        logger.debug("result: %s " % json.dumps(ret))
+        if not raw:
+            self.valid_call(res)
+            ret = res.json()
+            logger.debug("result: %s " % json.dumps(ret))
+            data = ret['data']
+        else:
+            data = res
         logger.debug("time: %ss" % res.elapsed.total_seconds())
         logger.debug("-----")
-        data = ret['data']
         return data
 
     def _apicall_chunk(self, url, data, offset, length):
@@ -145,16 +146,12 @@ class ChinoAPIUsers(ChinoAPIBase):
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPIUsers, self).__init__(auth, url, timeout, session)
 
-    def login(self, username, password, client_id=None, client_secret=None):
+    def login(self, username, password):
         # remove auth and save in temp var (in case of problems)
 
         auth = self.auth
         # self.auth = None
         url = "auth/token/"
-        if not client_id:
-            client_id = self.auth.client_id
-        if not client_secret:
-            client_secret = self.auth.client_secret
         pars = dict(username=username, password=password, grant_type='password')
         try:
             self.auth.set_auth_application()
@@ -363,7 +360,7 @@ class ChinoAPIPermissions(ChinoAPIBase):
 
         # def user(self, user_id):
         # url = "perms/users/%s" % user_id
-        #     return self.apicall('GET', url)
+        # return self.apicall('GET', url)
         #
         # def create_user(self, schema_id, user_id, own_data, all_data, insert=True):
         #     data = dict(permissions=dict(own_data=own_data, all_data=all_data, insert=insert))
@@ -611,9 +608,9 @@ class ChinoAPIBlobs(ChinoAPIBase):
 
     def detail(self, blob_id):
         # NOTE: this calls directly the function. needed to get the headers
-        url = self._url + 'blobs/%s' % blob_id
+        url = 'blobs/%s' % blob_id
         # this is different
-        res = self._apicall_get(url, None)
+        res = self.apicall('GET', url, raw=True)
         fname = res.headers['Content-Disposition'].split(';')[1].split('=')[1]
         return Blob(filename=fname, content=res.content)
 
@@ -665,11 +662,11 @@ class ChinoAuth(object):
         self.bearer_token = bearer_token
         self.client_id = client_id
         self.client_secret = client_secret
-        # if customer_key is set, then set auth as that
         if customer_key:
+            # if customer_key is set, then set auth as that
             self.set_auth_admin()
-        # if access_token is set, then use it as customer
         elif bearer_token:
+            # if access_token is set, then use it as customer
             self.set_auth_user()
         elif client_id and client_secret:
             self.set_auth_application()
