@@ -1,4 +1,6 @@
 import time
+from sys import path
+
 import cfg
 from chino.api import ChinoAPIClient
 from chino.exceptions import CallError
@@ -16,7 +18,7 @@ class BaseChinoTest(unittest.TestCase):
     def setUp(self):
         self.chino = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
                                     url=cfg.url)
-        logging.config.fileConfig(path.join(path.dirname(__file__),'logging.conf'))
+        logging.config.fileConfig(path.join(path.dirname(__file__), 'logging.conf'))
         self.logger = logging.getLogger('test')
         self.logger.setLevel(logging.DEBUG)
 
@@ -213,14 +215,14 @@ class RepositoryChinoTest(BaseChinoTest):
         self.assertEqual(created.description, 'test')
         first = self.chino.repositories.list().repositories[0]
         self.assertTrue(
-                self._equals(created.to_dict(), first.to_dict()),
-                "\n %s \n %s \n" % (created.to_json(), first.to_json()))
+            self._equals(created.to_dict(), first.to_dict()),
+            "\n %s \n %s \n" % (created.to_json(), first.to_json()))
         first.description = 'edited'
 
         resp = self.chino.repositories.update(first._id, description=first.description)
         detail = self.chino.repositories.detail(first._id)
         self.assertTrue(
-                self._equals(resp.to_dict(), detail.to_dict()), "\n %s \n %s \n" % (resp.to_json(), detail.to_json()))
+            self._equals(resp.to_dict(), detail.to_dict()), "\n %s \n %s \n" % (resp.to_json(), detail.to_json()))
 
         self.chino.repositories.delete(first._id)
 
@@ -250,8 +252,8 @@ class SchemaChinoTest(BaseChinoTest):
         detail = self.chino.schemas.detail(list.schemas[0]._id)
         detail2 = self.chino.schemas.detail(created._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
 
         detail.structure.fields.append(_Field('string', 'new one'))
         data = detail.to_dict()
@@ -261,8 +263,8 @@ class SchemaChinoTest(BaseChinoTest):
         self.chino.schemas.update(**data)
         detail2 = self.chino.schemas.detail(detail._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
         self.chino.schemas.delete(detail._id)
 
 
@@ -294,8 +296,8 @@ class UserSchemaChinoTest(BaseChinoTest):
         detail = self.chino.user_schemas.detail(id)
         detail2 = self.chino.user_schemas.detail(created._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
 
         detail.structure.fields.append(_Field('string', 'new one'))
         data = detail.to_dict()
@@ -306,8 +308,8 @@ class UserSchemaChinoTest(BaseChinoTest):
         self.chino.user_schemas.update(detail.user_schema_id, **data)
         detail2 = self.chino.user_schemas.detail(detail._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
         self.chino.user_schemas.delete(detail._id, force=True)
 
 
@@ -331,8 +333,8 @@ class CollectionChinoTest(BaseChinoTest):
         detail = self.chino.collections.detail(list.collections[0]._id)
         detail2 = self.chino.collections.detail(created._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
 
         self.chino.collections.update(detail._id, name='test2')
         detail2 = self.chino.collections.detail(detail._id)
@@ -502,8 +504,8 @@ class DocumentChinoTest(BaseChinoTest):
         detail = self.chino.schemas.detail(s_id)
         detail2 = self.chino.schemas.detail(created._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
 
         detail.structure.fields.append(_Field('string', 'new one'))
         # delete repository_id
@@ -514,9 +516,9 @@ class DocumentChinoTest(BaseChinoTest):
         self.chino.schemas.update(**data)
         detail2 = self.chino.schemas.detail(detail._id)
         self.assertTrue(
-                self._equals(detail.to_dict(), detail2.to_dict()),
-                "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
-        self.chino.schemas.delete(detail._id,force=True)
+            self._equals(detail.to_dict(), detail2.to_dict()),
+            "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
+        self.chino.schemas.delete(detail._id, force=True)
 
 
 class BlobChinoTest(BaseChinoTest):
