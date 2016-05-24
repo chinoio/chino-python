@@ -70,3 +70,4 @@ tests.xlsx
 *.csv
 ChinoTest.py
 chino
+test_doc_content.py
