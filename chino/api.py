@@ -24,7 +24,7 @@ __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
 logger = logging.getLogger(__name__)
 logging.config.fileConfig('../logging.conf')
-logger.setLevel(logging.DEBUG)
+#logger.setLevel(logging.DEBUG)
 
 class ChinoAPIBase(object):  # PRAGMA: NO COVER
     '''
