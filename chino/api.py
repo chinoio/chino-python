@@ -19,12 +19,13 @@ from objects import Repository, ListResult, User, Group, Schema, Document, Blob,
 
 import logging
 import logging.config
+from os import path
 
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
-logger = logging.getLogger(__name__)
-logging.config.fileConfig('../logging.conf')
-#logger.setLevel(logging.DEBUG)
+logger = logging.getLogger('chino')
+logging.config.fileConfig(path.join(path.dirname(__file__),'logging.conf'))
+# logger.setLevel(logging.INFO)
 
 class ChinoAPIBase(object):  # PRAGMA: NO COVER
     '''
