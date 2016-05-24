@@ -1,5 +1,4 @@
 import time
-from sys import path
 
 import cfg
 from chino.api import ChinoAPIClient
@@ -12,15 +11,17 @@ import unittest
 import logging
 import logging.config
 import hashlib
+from os import path
 
+logging.config.fileConfig(path.join([path.dirname(__file__), 'logging.conf']))
 
 class BaseChinoTest(unittest.TestCase):
     def setUp(self):
         self.chino = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
                                     url=cfg.url)
-        logging.config.fileConfig(path.join(path.dirname(__file__), 'logging.conf'))
         self.logger = logging.getLogger('test')
-        self.logger.setLevel(logging.DEBUG)
+        # self.logger.setLevel(logging.INFO)
+        self.logger.debug("log")
 
     def _equals(self, i_d1, i_d2):
         """
