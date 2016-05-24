@@ -18,6 +18,10 @@ setup(name='chino',
       author_email='stefano@chino.io',
       url='https://www.chino.io',
       packages=['chino'],
+      package_data={
+          "chino": [
+              "logging.conf"
+          ]},
       license = 'CC BY-SA 4.0',
       install_requires=['requests >=2.9.1, <=3'],
       classifiers=[
