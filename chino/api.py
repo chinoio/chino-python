@@ -18,11 +18,11 @@ from exceptions import MethodNotSupported, CallError, CallFail, ClientError
 from objects import Repository, ListResult, User, Group, Schema, Document, Blob, BlobDetail, UserSchema, \
     Collection, Permission, IDs, Application
 
-
+import logging.config
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
 logger = logging.getLogger('chino')
-
+# logging.config.fileConfig('logging.conf')
 
 class ChinoAPIBase(object):  # PRAGMA: NO COVER
     '''
@@ -154,7 +154,7 @@ class ChinoAPIUsers(ChinoAPIBase):
         auth = self.auth
         # self.auth = None
         url = "auth/token/"
-        pars = dict(code=code, redirect_uri=redirect_uri,client_id=client_id,client_secret=client_secret)
+        pars = dict(code=code, redirect_uri=redirect_uri,client_id=client_id,client_secret=client_secret,grant_type='authorization_code')
         try:
             self.auth.set_auth_application()
             result = self.apicall('POST', url, form=pars)

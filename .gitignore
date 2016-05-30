@@ -71,3 +71,5 @@ tests.xlsx
 ChinoTest.py
 test_doc_content.py
 test_log.py
+uncap_script.py
+api.oauth.py
