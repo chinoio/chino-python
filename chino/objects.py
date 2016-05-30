@@ -2,8 +2,8 @@ import json
 from collections import namedtuple
 
 __author__ = 'Stefano Tranquillini <stefano.tranquillini@gmail.com>'
-
-
+import logging
+logger = logging.getLogger('chino')
 class ChinoBaseObject(object):
     __str_name__ = 'not set'
     __str_names__ = 'not set'
@@ -27,16 +27,16 @@ class ChinoBaseObject(object):
 
     def __repr__(self):
         # return str(self.to_dict())
-        return "<%s:%s>" % (self.__str_name__.upper(), self.id)
+        return "<%s:%s>" % (self.__str_name__.upper(), self._id)
 
 
 class Paging(ChinoBaseObject):
-    def __init__(self, offset=0, limit=100, total_count=-1, count=-1):
+    def __init__(self, offset=0, limit=100, count=-1, total_count=-1):
         super(Paging, self).__init__()
         self.offset = offset
         self.limit = limit
-        self.count = count
         self.total_count = total_count
+        self.count = count
 
     def as_map(self):
         return {
@@ -45,7 +45,7 @@ class Paging(ChinoBaseObject):
         }
 
     def __str__(self):
-        return "Paging [offset:%s,limit:%s,count:%s]" % (self.offset, self.limit, self.count)
+        return "Paging [offset:%s,limit:%s,count:%s,total_count:%s]" % (self.offset, self.limit, self.count, self.total_count)
 
 
 
