@@ -24,7 +24,8 @@ from os import path
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
 logger = logging.getLogger('chino')
-# logging.config.fileConfig(path.join([path.dirname(__file__),'logging.conf']))
+log_conf = path.join(path.dirname(__file__),'logging.conf')
+logging.config.fileConfig(log_conf)
 
 class ChinoAPIBase(object):  # PRAGMA: NO COVER
     '''
