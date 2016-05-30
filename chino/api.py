@@ -146,6 +146,28 @@ class ChinoAPIUsers(ChinoAPIBase):
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPIUsers, self).__init__(auth, url, timeout, session)
 
+    #TODO: expiration time.
+
+    def code(self, code,redirect_uri,client_id,client_secret):
+        # remove auth and save in temp var (in case of problems)
+
+        auth = self.auth
+        # self.auth = None
+        url = "auth/token/"
+        pars = dict(code=code, redirect_uri=redirect_uri,client_id=client_id,client_secret=client_secret)
+        try:
+            self.auth.set_auth_application()
+            result = self.apicall('POST', url, form=pars)
+            self.auth.refresh_token = result['refresh_token']
+            self.auth.bearer_token = result['access_token']
+            self.auth.set_auth_user()
+            return result
+        except Exception as ex:
+            # reset auth if things go wrong
+            self.auth = auth
+            # propagate exception
+            raise ex
+
     def login(self, username, password):
         # remove auth and save in temp var (in case of problems)
 
@@ -685,7 +707,6 @@ class ChinoAuth(object):
 
     def get_auth(self):
         return self.__auth
-
 
 class HTTPBearerAuth(AuthBase):
     """Attaches HTTP Basic Authentication to the given Request object."""

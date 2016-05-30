@@ -69,3 +69,5 @@ tests.xlsx
 ~$tests.xlsx
 *.csv
 ChinoTest.py
+test_doc_content.py
+test_log.py
