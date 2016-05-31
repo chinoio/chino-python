@@ -640,5 +640,72 @@ class SearchChinoTest(BaseChinoTest):
         self.assertEqual(res.paging.total_count, 10)
 
 
+class PermissionChinoTest(BaseChinoTest):
+    def setUp(self):
+        super(PermissionChinoTest, self).setUp()
+        u_schemas = self.chino.user_schemas.list()
+        for us in u_schemas.user_schemas:
+            li = self.chino.users.list(us._id)
+            for user in li.users:
+                self.chino.users.delete(user._id, force=True)
+        fields = [dict(name='first_name', type='string'), dict(name='last_name', type='string'),
+                  dict(name='email', type='string')]
+        self.user_schema = self.chino.user_schemas.create('test', fields)._id
+        self.password = '12345678'
+        self.user0 = self.chino.users.create(user_schema_id=self.user_schema, username='test', password=self.password,
+                                             attributes=dict(first_name='user_0', last_name='doe',
+                                                             email='test@chino.io'))
+        self.user1 = self.chino.users.create(user_schema_id=self.user_schema, username='test1', password=self.password,
+                                             attributes=dict(first_name='user_1', last_name='doe',
+                                                             email='test@chino.io'))
+        self.group = self.chino.groups.create('testing', attributes=dict(hospital='test'))
+
+        fields = [dict(name='fieldInt', type='integer'), dict(name='fieldString', type='string'),
+                  dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
+                  dict(name='fieldDateTime', type='datetime')]
+        self.repo = self.chino.repositories.create('test')._id
+        self.schema = self.chino.schemas.create(self.repo, 'test', fields)
+        self.chino_user0 = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
+                                          url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret)
+        self.chino_user0.users.login(self.user0.username, self.password)
+        self.chino_user1 = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
+                                          url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret)
+        self.chino_user1.users.login(self.user1.username, self.password)
+
+    def tearDown(self):
+        u_schemas = self.chino.user_schemas.list()
+        for us in u_schemas.user_schemas:
+            li = self.chino.users.list(us._id)
+            for user in li.users:
+                self.chino.users.delete(user._id, force=True)
+            self.chino.user_schemas.delete(us._id, True)
+        self.chino.groups.delete(self.group._id, True)
+        try:
+            self.chino.schemas.delete(self.schema, True, all_content=True)
+            self.chino.repositories.delete(self.repo, True, all_content=True)
+        except CallError:
+            pass
+
+    def test_create_a_repo(self):
+        with self.assertRaises(CallError):  # user has no create permission, expected an error.
+            self.repository = self.chino_user0.repositories.create('test')
+        self.chino.permissions.resources('grant', 'repositories', 'users', self.user0._id, manage=['C', 'R', 'U', 'L'],
+                                         authorize=['A'])
+        # now it has the permissions
+        self.repository = self.chino_user0.repositories.create('test')
+        # grant to user1 the permission of read all the repository but not to create
+        self.chino.permissions.resources('grant', 'repositories', 'users', self.user1._id, manage=['R', 'U', 'L'])
+        with self.assertRaises(CallError):  # must fail because user has no create permission
+            self.chino_user1.repositories.create('test')
+        li = self.chino_user1.repositories.list()
+        for repo in li.repositories:
+            self.chino_user1.repositories.detail(repo._id)
+        with self.assertRaises(CallError):  # must fail because user has no delete permission
+            self.chino_user1.repositories.delete(self.repository._id)
+        self.chino_user0.permissions.resource('grant', 'repositories', self.repository._id, 'users', self.user1._id,
+                                              manage=['D'])
+        self.chino_user1.repositories.delete(self.repository._id)
+
+
 if __name__ == '__main__':
     unittest.main()
