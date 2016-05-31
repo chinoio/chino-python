@@ -686,7 +686,7 @@ class PermissionChinoTest(BaseChinoTest):
         except CallError:
             pass
 
-    def test_create_a_repo(self):
+    def test_create_a_repository(self):
         with self.assertRaises(CallError):  # user has no create permission, expected an error.
             self.repository = self.chino_user0.repositories.create('test')
         self.chino.permissions.resources('grant', 'repositories', 'users', self.user0._id, manage=['C', 'R', 'U', 'L'],
@@ -700,11 +700,33 @@ class PermissionChinoTest(BaseChinoTest):
         li = self.chino_user1.repositories.list()
         for repo in li.repositories:
             self.chino_user1.repositories.detail(repo._id)
-        with self.assertRaises(CallError):  # must fail because user has no delete permission
+        with self.assertRaises(CallError):  # must fail because user has no "D" permission
             self.chino_user1.repositories.delete(self.repository._id)
         self.chino_user0.permissions.resource('grant', 'repositories', self.repository._id, 'users', self.user1._id,
                                               manage=['D'])
+        with self.assertRaises(CallError):  # must fail because user is not authorized
+            self.chino_user1.permissions.resource('grant', 'repositories', self.repository._id, 'users', self.user0._id,
+                                                  manage=['D'])
         self.chino_user1.repositories.delete(self.repository._id)
+
+    def test_create_documents(self):
+        self.chino.permissions.resources('grant', 'repositories', 'users', self.user0._id, manage=['C'])
+        self.repository = self.chino_user0.repositories.create('test')
+        fields = [dict(name='fieldInt', type='integer'), dict(name='fieldString', type='string'),
+                  dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
+                  dict(name='fieldDateTime', type='datetime')]
+        self.schema = self.chino_user0.schemas.create(self.repository._id, 'test_schema', fields)._id
+        content = dict(fieldInt=123, fieldString='test', fieldBool=False, fieldDate='2015-02-19',
+                       fieldDateTime='2015-02-19T16:39:47')
+        self.document = self.chino_user0.documents.create(self.schema, content=content)._id
+        with self.assertRaises(CallError):  # must fail because user is not authorized
+            self.chino_user1.documents.create(self.schema, content=content)._id
+        with self.assertRaises(CallError):  # must fail because user is not authorized
+            self.chino_user1.documents.list(self.schema)
+        self.chino_user0.permissions.resource_children('grant', 'schemas', self.schema, 'documents', 'users',
+                                                       self.user1._id, manage=['L'])
+        self.assertEqual(self.chino_user1.documents.list(self.schema).paging.total_count, 0)
+        self.assertEqual(self.chino_user0.documents.list(self.schema).paging.total_count, 1)
 
 
 if __name__ == '__main__':
