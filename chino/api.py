@@ -562,7 +562,6 @@ class ChinoAPIBlobs(ChinoAPIBase):
         # url = "http://httpbin.org/put"
         return self.apicall('CHUNK', url, data=data, params=dict(length=length, offset=offset))['blob']
 
-
     def commit(self, upload_id):
         url = 'blobs/commit'
         data = dict(upload_id=upload_id)
