@@ -48,7 +48,6 @@ class Paging(ChinoBaseObject):
         return "Paging [offset:%s,limit:%s,count:%s,total_count:%s]" % (self.offset, self.limit, self.count, self.total_count)
 
 
-
 class ListResult(ChinoBaseObject):
     def __init__(self, class_obj, result):
         self.paging = Paging(result['offset'], result['limit'], result['count'], result['total_count'])
@@ -88,12 +87,14 @@ class _DictContent(ChinoBaseObject):
     def _id(self):
         return "-"
 
+
 class IDs(ChinoBaseObject):
     __str_name__ = 'id'
     __str_names__ = 'ids'
 
     def __init__(self, id):
         self.id = id
+
 
 class Repository(ChinoBaseObject):
     """
@@ -319,7 +320,10 @@ class Schema(ChinoBaseObject):
                     "name": "test_boolean"
                   },
                   {
-                    "type": "date",
+                    "type": "dgit+https://github.com/chinoio/chino-python-library.git@develop
+git+https://github.com/chinoio/chino-python-library.git@develop
+git+https://github.com/chinoio/chino-python-library.git@develop
+ate",
                     "name": "test_date"
                   },
                   {
@@ -343,7 +347,7 @@ class Schema(ChinoBaseObject):
         res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
         return res
 
-    #     # print res
+    # # print res
     #     if self.structure:
     #         if type(self.structure) is not dict:
     #             res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
@@ -385,7 +389,7 @@ class UserSchema(ChinoBaseObject):
         res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
         return res
 
-    #     # print res
+    # # print res
     #     if self.structure:
     #         if type(self.structure) is not dict:
     #             res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
@@ -437,6 +441,34 @@ class Collection(ChinoBaseObject):
         self.insert_date = insert_date
         self.last_update = last_update
         self.is_active = is_active
+
+
+class Application(ChinoBaseObject):
+    """
+    Class for the Collection.
+
+    Example::
+          "data": {
+            "app_secret": "bBRdHHPmIHbEzywlrK3v9sjbvDXLG20xNhMuyX7g1hAbP4ht7aznD7O7gcKlfhWUZ8osgJezZGK4EainErX4ktxkMX56KtihFiKVtfw8pMVDIVx1N3XjhqTbTTIGv4g7",
+            "grant_type": "authorization-code",
+            "app_name": "Teest",
+            "redirect_url": "http://127.0.0.1/",
+            "app_id": "4ke1mor5GW4YtH80Y9eIaAFLHUAwLtQ1l7wOQnQV"
+          },
+    """
+    __str_name__ = 'application'
+    __str_names__ = 'applications'
+
+    @property
+    def _id(self):
+        return self.app_id
+
+    def __init__(self, app_name=None, app_secret=None, app_id=None, redirect_url=None, grant_type=None):
+        self.app_name = app_name
+        self.app_secret = app_secret
+        self.app_id = app_id
+        self.redirect_url = redirect_url
+        self.grant_type = grant_type
 
 
 class Permission(ChinoBaseObject):
@@ -574,7 +606,7 @@ class Search(ChinoBaseObject):
 _PermissionProperty = namedtuple('_PermissionProperty', ['read', 'delete', 'update'])
 
 # class _PermissionProperty(ChinoBaseObject):
-#     """
+# """
 #         "read": true,
 #         "update": false,
 #         "delete": true
