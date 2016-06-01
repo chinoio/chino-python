@@ -132,24 +132,23 @@ class UserChinoTest(BaseChinoTest):
         self.assertEqual(ste_4.attributes.first_name, EDIT)
         # current not working for main user
         self.assertRaises(CallError, self.chino.users.current)
+
         # login
-        self.chino.users.login(EDIT, '12345678')
-        ste_2 = self.chino.users.current()
+        self.chino_user = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
+                                          url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret)
+        self.chino_user.users.login(EDIT, '12345678')
+        ste_2 = self.chino_user.users.current()
         self.assertEqual(ste_2.username, EDIT)
-
-        self.chino.users.refresh()
-
+        self.chino_user.users.refresh()
         # now should be impossible to create the user
-        self.assertRaises(CallError, self.chino.users.create, self.us._id, username='error', password='12345678',
+        self.assertRaises(CallError, self.chino_user.users.create, self.us._id, username='error', password='12345678',
                           attributes=dict(first_name='john', last_name='doe',
                                           email='test@chino.io'))
 
-        self.chino.users.logout()
-        self.assertRaises(CallError, self.chino.users.current)
+        self.chino_user.users.logout()
+        self.assertRaises(Exception, self.chino_user.users.login, EDIT, '')
 
-        self.assertRaises(Exception, self.chino.users.login, EDIT, '')
-        # rest to admin to delete it
-        self.chino.auth.set_auth_admin()
+        self.assertRaises(CallError, self.chino.users.current)
         # this invalidates the user
         self.chino.users.delete(user._id)
 
@@ -727,7 +726,6 @@ class PermissionChinoTest(BaseChinoTest):
                                                        self.user1._id, manage=['L'])
         self.assertEqual(self.chino_user1.documents.list(self.schema).paging.total_count, 0)
         self.assertEqual(self.chino_user0.documents.list(self.schema).paging.total_count, 1)
-
 
 if __name__ == '__main__':
     unittest.main()
