@@ -214,7 +214,7 @@ class ChinoAPIUsers(ChinoAPIBase):
 
 
     def current(self):
-        url = "users"
+        url = "users/me"
         return User(**self.apicall('GET', url)['user'])
 
     def logout(self):
@@ -792,7 +792,7 @@ class ChinoAPIApplication(ChinoAPIBase):
         :param: usual for a list ``offset``, ``limit``
         :return: dict containing ``count``,``total_count``,``limit``,``offset``,``repositories``
         """
-        url = "auth/application"
+        url = "auth/applications"
         return ListResult(Application, self.apicall('GET', url, params=pars))
 
     def create(self, name, grant_type='password', redirect_url=''):
@@ -803,7 +803,7 @@ class ChinoAPIApplication(ChinoAPIBase):
         :return: (dict) the Application.
         """
         data = dict(name=name, grant_type=grant_type, redirect_url=redirect_url)
-        url = "auth/application"
+        url = "auth/applications"
         return Application(**self.apicall('POST', url, data=data)[Application.__str_name__])
 
     def detail(self, application_id):
@@ -813,15 +813,15 @@ class ChinoAPIApplication(ChinoAPIBase):
         :param application_id: (id) of the Application
         :return: (dict) the Application.
         """
-        url = "auth/application/%s" % application_id
+        url = "auth/applications/%s" % application_id
         return Application(**self.apicall('GET', url)[Application.__str_name__])
 
     def update(self, application_id, **kwargs):
-        url = "auth/application/%s" % application_id
+        url = "auth/applications/%s" % application_id
         return Application(**self.apicall('PUT', url, data=kwargs)[Application.__str_name__])
 
     def delete(self, application_id, force=False):
-        url = "auth/application/%s" % application_id
+        url = "auth/applications/%s" % application_id
         if force:
             params = dict(force='true')
         else:

@@ -389,12 +389,6 @@ class UserSchema(ChinoBaseObject):
         res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
         return res
 
-    # # print res
-    #     if self.structure:
-    #         if type(self.structure) is not dict:
-    #             res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
-    #     return res
-
     @property
     def _id(self):
         return self.user_schema_id
