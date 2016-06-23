@@ -320,10 +320,7 @@ class Schema(ChinoBaseObject):
                     "name": "test_boolean"
                   },
                   {
-                    "type": "dgit+https://github.com/chinoio/chino-python-library.git@develop
-git+https://github.com/chinoio/chino-python-library.git@develop
-git+https://github.com/chinoio/chino-python-library.git@develop
-ate",
+                    "type": "data",
                     "name": "test_date"
                   },
                   {
@@ -368,13 +365,6 @@ ate",
         # assuming it's a dict.
         if structure:
             self.structure = _Fields(fields=[_Field(**f) for f in structure['fields']])
-            # print "init %s" % type(structure)
-            # if type(structure) == _Fields.__class__:
-            #     self.structure = structure
-            # elif type(structure) is dict:
-            #
-            # else:
-            #     raise Exception('The field structure as an unknown type, only _Fields and dict are allowed.')
 
 
 class UserSchema(ChinoBaseObject):
