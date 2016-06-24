@@ -4,6 +4,8 @@ from collections import namedtuple
 __author__ = 'Stefano Tranquillini <stefano.tranquillini@gmail.com>'
 import logging
 logger = logging.getLogger('chino')
+
+
 class ChinoBaseObject(object):
     __str_name__ = 'not set'
     __str_names__ = 'not set'
@@ -31,6 +33,7 @@ class ChinoBaseObject(object):
 
 
 class Paging(ChinoBaseObject):
+
     def __init__(self, offset=0, limit=100, count=-1, total_count=-1):
         super(Paging, self).__init__()
         self.offset = offset
@@ -49,18 +52,24 @@ class Paging(ChinoBaseObject):
 
 
 class ListResult(ChinoBaseObject):
+
     def __init__(self, class_obj, result):
-        self.paging = Paging(result['offset'], result['limit'], result['count'], result['total_count'])
+        self.paging = Paging(result['offset'], result['limit'], result[
+                             'count'], result['total_count'])
         results = []
         for r in result[class_obj.__str_names__]:
-            results.append(class_obj(**r))
+            if type(r) == dict:
+                results.append(class_obj(**r))
+            else:
+                results.append(class_obj(r))
         self.__setattr__(class_obj.__str_names__, results)
         self.class_obj = class_obj.__str_names__
 
     def to_dict(self):
         res = super(ListResult, self).to_dict()
         res['paging'] = self.paging.to_dict()
-        res[self.class_obj] = [o.to_dict() for o in self.__getattribute__(self.class_obj)]
+        res[self.class_obj] = [o.to_dict()
+                               for o in self.__getattribute__(self.class_obj)]
         del res['class_obj']
         return res
 
@@ -270,6 +279,7 @@ class Document(ChinoBaseObject):
 
 
 class _Field(ChinoBaseObject):
+
     def __init__(self, type, name, indexed=None):
         self.type = type
         self.name = name
@@ -285,6 +295,7 @@ class _Field(ChinoBaseObject):
 
 
 class _Fields(ChinoBaseObject):
+
     def __init__(self, fields):
         self.fields = fields
 
@@ -341,7 +352,8 @@ class Schema(ChinoBaseObject):
 
     def to_dict(self):
         res = super(Schema, self).to_dict()
-        res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
+        res['structure'] = dict(fields=[f.to_dict()
+                                        for f in self.structure.fields])
         return res
 
     # # print res
@@ -364,7 +376,8 @@ class Schema(ChinoBaseObject):
         self.last_update = last_update
         # assuming it's a dict.
         if structure:
-            self.structure = _Fields(fields=[_Field(**f) for f in structure['fields']])
+            self.structure = _Fields(
+                fields=[_Field(**f) for f in structure['fields']])
 
 
 class UserSchema(ChinoBaseObject):
@@ -376,7 +389,8 @@ class UserSchema(ChinoBaseObject):
 
     def to_dict(self):
         res = super(UserSchema, self).to_dict()
-        res['structure'] = dict(fields=[f.to_dict() for f in self.structure.fields])
+        res['structure'] = dict(fields=[f.to_dict()
+                                        for f in self.structure.fields])
         return res
 
     @property
@@ -393,7 +407,8 @@ class UserSchema(ChinoBaseObject):
         self.last_update = last_update
         # assuming it's a dict.
         if structure:
-            self.structure = _Fields(fields=[_Field(**f) for f in structure['fields']])
+            self.structure = _Fields(
+                fields=[_Field(**f) for f in structure['fields']])
 
 
 class Collection(ChinoBaseObject):
@@ -514,6 +529,7 @@ class Permission(ChinoBaseObject):
 
 
 class _PermissionField(ChinoBaseObject):
+
     def __init__(self, Authorize=None, Manage=None):
         if Authorize:
             self.authorize = Authorize
@@ -536,6 +552,7 @@ class _PermissionField(ChinoBaseObject):
 
 
 class _SortField(ChinoBaseObject):
+
     def __init__(self, field, order='asc'):
         self.field = field
         self.order = order
@@ -546,6 +563,7 @@ class _SortField(ChinoBaseObject):
 
 
 class _FilterField(ChinoBaseObject):
+
     def __init__(self, field, value, type='eq', case_sensitive=False):
         self.field = field
         self.type = type
@@ -558,6 +576,7 @@ class _FilterField(ChinoBaseObject):
 
 
 class Search(ChinoBaseObject):
+
     def __init__(self, schema_id, result_type, sort=None, filters=None):
         self.schema_id = schema_id
         self.result_type = result_type
@@ -587,7 +606,8 @@ class Search(ChinoBaseObject):
         return res
 
 
-_PermissionProperty = namedtuple('_PermissionProperty', ['read', 'delete', 'update'])
+_PermissionProperty = namedtuple(
+    '_PermissionProperty', ['read', 'delete', 'update'])
 
 # class _PermissionProperty(ChinoBaseObject):
 # """
@@ -687,4 +707,5 @@ _PermissionProperty = namedtuple('_PermissionProperty', ['read', 'delete', 'upda
 #
 
 Blob = namedtuple('Blob', ['filename', 'content'])
-BlobDetail = namedtuple('BlobDetail', ['bytes', 'blob_id', 'sha1', 'document_id', 'md5'])
+BlobDetail = namedtuple(
+    'BlobDetail', ['bytes', 'blob_id', 'sha1', 'document_id', 'md5'])
