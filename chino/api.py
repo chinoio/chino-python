@@ -326,7 +326,7 @@ class ChinoAPIPermissions(ChinoAPIBase):
         return self.apicall('POST', url, data=data)
 
     def resource_children(self, action, resource_type, resource_id, resource_child_type, subject_type, subject_id,
-                          manage=None, authorize=None):
+                          manage=None, authorize=None,created_document=None):
         url = "perms/%s/%s/%s/%s/%s/%s" % (
             action, resource_type, resource_id, resource_child_type, subject_type, subject_id)
         data = dict()
@@ -334,6 +334,8 @@ class ChinoAPIPermissions(ChinoAPIBase):
             data['manage'] = manage
         if authorize:
             data['authorize'] = authorize
+        if created_document:
+            data['created_document']=created_document
         return self.apicall('POST', url, data=data)
 
     def read_perms(self):
