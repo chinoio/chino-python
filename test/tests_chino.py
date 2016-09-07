@@ -19,7 +19,7 @@ logging.config.fileConfig(path.join([path.dirname(__file__), 'logging.conf']))
 class BaseChinoTest(unittest.TestCase):
     def setUp(self):
         self.chino = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
-                                    url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret)
+                                    url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret,timeout=20)
         self.logger = logging.getLogger('test')
         self.logger.debug("log")
 
@@ -89,6 +89,8 @@ class UserChinoTest(BaseChinoTest):
         for user in list.users:
             self.chino.users.delete(user._id, force=True)
         self.chino.user_schemas.delete(self.us._id, force=True)
+        if hasattr(self,'app'):
+            self.chino.applications.delete(self.app._id)
 
     def test_list(self):
         list = self.chino.users.list(self.us._id)
@@ -133,9 +135,21 @@ class UserChinoTest(BaseChinoTest):
         # current not working for main user
         self.assertRaises(CallError, self.chino.users.current)
 
+
+        # this invalidates the user
+        self.chino.users.delete(user._id)
+
+    # @unittest.skip("method disabled locally")
+    def test_auth(self):
         # login
+        NAME = 'test.user.new'
+        EDIT = NAME + '.edited'
+        self.app = self.chino.applications.create("test",grant_type='password')
         self.chino_user = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
-                                          url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret)
+                                          url=cfg.url, client_id=self.app.app_id, client_secret=self.app.app_secret)
+        user = self.chino.users.create(self.us._id, username=EDIT, password='12345678',
+                                       attributes=dict(first_name='john', last_name='doe',
+                                                       email='test@chino.io'))
         self.chino_user.users.login(EDIT, '12345678')
         ste_2 = self.chino_user.users.current()
         self.assertEqual(ste_2.username, EDIT)
@@ -149,10 +163,8 @@ class UserChinoTest(BaseChinoTest):
         self.assertRaises(Exception, self.chino_user.users.login, EDIT, '')
 
         self.assertRaises(CallError, self.chino.users.current)
-        # this invalidates the user
-        self.chino.users.delete(user._id)
 
-
+# @unittest.skip("Class disabled locally")
 class ApplicationsChinoTest(BaseChinoTest):
     user = None
 
@@ -171,7 +183,7 @@ class ApplicationsChinoTest(BaseChinoTest):
         apps = self.chino.applications.list()
         self.chino.applications.delete(app1._id, force=True)
 
-
+# @unittest.skip("Class disabled locally")
 class GroupChinoTest(BaseChinoTest):
     def tearDown(self):
         list = self.chino.groups.list()
@@ -333,7 +345,6 @@ class UserSchemaChinoTest(BaseChinoTest):
             "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
         self.chino.user_schemas.delete(detail._id, force=True)
 
-
 class CollectionChinoTest(BaseChinoTest):
     def setUp(self):
         super(CollectionChinoTest, self).setUp()
@@ -471,6 +482,8 @@ class DocumentChinoTest(BaseChinoTest):
                   dict(name='fieldBool', type='boolean'), dict(name='fieldDate', type='date'),
                   dict(name='fieldDateTime', type='datetime')]
         self.schema = self.chino.schemas.create(self.repo, 'test', fields)._id
+        fields = [dict(name='fieldString', type='text')]
+        self.schema_1 = self.chino.schemas.create(self.repo, 'test', fields)._id
 
     def tearDown(self):
         list = self.chino.documents.list(self.schema)
@@ -491,6 +504,39 @@ class DocumentChinoTest(BaseChinoTest):
         list = self.chino.documents.list(self.schema, True)
         self.assertIsNotNone(list.documents[0].content)
         self.chino.documents.delete(document._id, True)
+
+    def test_too_big(self):
+        k_bit = 'YXNkc2FkamtzZGprYWhqa3NkaGFqa3NoZGpzYWhkamtzYWhkamtoc2Fqa2xoamRrc2ZsaGpka2xzaGZhamtkbHNoamFrZmxoZGp' \
+                'za2xhaGZqZGtsc2hqZmtsYWhqZmtkbGhzYWpma2xkaHNqa2xhaGZqZGtsc2hhamZrbGFoamtkc2xoamZrZGxzaGpma2xkc2hham' \
+                'tmbGRoc2pha2xmaGpka2xzaGpma2FzZGRqc2FpbyBkanNpYW9qZGlzYWpkaW9zYWpkaW9zYWppZG9qc2Fpb2RqaXNhb2pkaXNvY' \
+                'WpkaW9zamFpZG9qc2Fpb2RqaXcxMDkzMDgyMTkwOGRtMXdpMDltZGk5MDFtaTlkMG13MWk5MGRtaXc5MTBtaWQ5dzBtaGRzamFr' \
+                'aGRqa3NoYWRqbGFoZnNqa2xkaHNhamZrbGRoc2pha2xoZmpkc2tsYWhmamRrc2xoZmllYXVoZmlvZWgyYXVpb2ZoZXVpb3BxamV' \
+                'pb3dlangsYXNhZHNhc2RzYWRqa3NkamthaGprc2RoYWprc2hkanNhaGRqa3NhaGRqa2hzYWprbGhqZGtzZmxoamRrbHNoZmFqa2' \
+                'Rsc2hqYWtmbGhkanNrbGFoZmpka2xzaGpma2xhaGpma2RsaHNhamZrbGRoc2prbGFoZmpka2xzaGFqZmtsYWhqa2RzbGhqZmtkb' \
+                'HNoamZrbGRzaGFqa2ZsZGhzamFrbGZoamRrbHNoamZrYXNkZGpzYWlvIGRqc2lhb2pkaXNhamRpb3NhamRpb3Nhamlkb2pzYWlv' \
+                'ZGppc2FvamRpc29hamRpb3NqYWlkb2pzYWlvZGppdzEwOTMwODIxOTA4ZG0xd2kwOW1kaTkwMW1pOWQwbXcxaTkwZG1pdzkxMG1' \
+                'pZDl3MG1oZHNqYWtoZGprc2hhZGpsYWhmc2prbGRoc2FqZmtsZGhzamFrbGhmamRza2xhaGZqZGtzbGhmaWVhdWhmaW9laDJhdW' \
+                'lvZmhldWlvcHFqZWlvd2VqeCxhc2Fkc2FzZHNhZGprc2Rqa2FoamtzZGhhamtzaGRqc2FoZGprc2FoZGpraHNhamtsaGpka3Nmb' \
+                'GhqZGtsc2hmYWprZGxzaGpha2ZsaGRqc2tsYWhmamRrbHNoamZrbGFoamZrZGxoc2FqZmtsZGhzamtsYWhmamRrbHNoYWpma2xh' \
+                'aGprZHNsaGpma2Rsc2hqZmtsZHNoYWprZmxkaHNqYWtsZmhqZGtsc2hqZmthc2RkanNhaW8gZGpzaWFvamRpc2FqZGlvc2FqZGl' \
+                'vc2FqaWRvanNhaW9kamlzYW9qZGlzb2FqZGlvc2phaWRvanNhaW9kaml3MTA5MzA4MjE5MDhkbTF3aTA5bWRpOTAxbWk5ZDBtdz' \
+                'FpOTBkbWl3OTEwbWlkOXcwbWhkc2pha2hkamtzaGFkamxhaGZzamtsZGhzYWpma2xkaHNqYWtsaGZqZHNrbGFoZmpka3NsaGZpZ' \
+                'WF1aGZpb2VoMmF1aW9maGV1aW9wcWplaW93ZWp4LGFzYWRzYXNkc2FkamtzZGprYWhqa3NkaGFqa3NoZGpzYWhkamtzYWhkamto' \
+                'c2Fqa2xoamRrc2ZsaGpka2xzaGZhamtkbHNoamFrZmxoZGpza2xhaGZqZGtsc2hqZmtsYWhqZmtkbGhzYWpma2xkaHNqa2xhaGZ' \
+                'qZGtsc2hhamZrbGFoamtkc2xoamZrZGxzaGpma2xkc2hhamtmbGRoc2pha2xmaGpka2xzaGpma2FzZGRqc2FpbyBkanNpYW9qZG' \
+                'lzYWpkaW9zYWpkaW9zYWppZG9qc2Fpb2RqaXNhb2pkaXNvYWpkaW9zamFpZG9qc2Fpb2RqaXcxMDkzMDgyMTkwOGRtMXdpMDltZ' \
+                'Gk5MDFtaTlkMG13MWk5MGRtaXc5MTBtaWQ5dzBtaGRzamFraGRqa3NoYWRqbGFoZnNqa2xkaHNhamZrbGRoc2pha2xoZmpkc2ts' \
+                'YWhmamRrc2xoZmllYXVoZmlvZWgyYXVpb2ZoZXVpb3BxamVpb3dlangsYXNhZHNkc2Fh'
+        n = 10  # number of MB
+        k = 0
+        dat = ""
+        self.chino.documents.create(self.schema_1, content=dict(fieldString=dat))
+        while k < n * 512:
+            dat += "%s" % k_bit
+            k += 1
+        #
+        with self.assertRaises(CallError):  # must fail because is too big
+            self.chino.documents.create(self.schema_1, content=dict(fieldString=dat))
 
     def test_crud(self):
         content = dict(fieldInt=123, fieldString='test', fieldBool=False, fieldDate='2015-02-19',
@@ -541,7 +587,6 @@ class DocumentChinoTest(BaseChinoTest):
             "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
         self.chino.schemas.delete(detail._id, force=True)
 
-
 class BlobChinoTest(BaseChinoTest):
     def setUp(self):
         super(BlobChinoTest, self).setUp()
@@ -550,7 +595,8 @@ class BlobChinoTest(BaseChinoTest):
         self.schema = self.chino.schemas.create(self.repo, 'test', fields)._id
 
     def tearDown(self):
-        self.chino.blobs.delete(self.blob.blob_id)
+        if hasattr(self,'blob'):
+            self.chino.blobs.delete(self.blob.blob_id)
         self.chino.documents.delete(self.document._id, True)
         self.chino.schemas.delete(self.schema, True)
         self.chino.repositories.delete(self.repo, True)
@@ -581,7 +627,6 @@ class BlobChinoTest(BaseChinoTest):
         # self.assertEqual(md5_detail.digest(), md5_original.digest())
         self.assertEqual(md5_detail.hexdigest(), blob.md5)
         self.blob = blob
-
 
 class SearchChinoTest(BaseChinoTest):
     def setUp(self):
@@ -633,14 +678,16 @@ class SearchChinoTest(BaseChinoTest):
                                                               fieldDate='2015-02-19',
                                                               fieldDateTime='2015-02-19T16:39:47'))
         # self.chino.searches.search(self.schema) # TODO: improve tests
-        time.sleep(20)  # wait the index max update time
+        time.sleep(1)  # wait the index max update time
         res = self.chino.searches.search(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
-        self.assertEqual(res.paging.total_count, 10)
-
+        self.assertEqual(res.paging.total_count, 10, 'search not working')
 
 class PermissionChinoTest(BaseChinoTest):
     def setUp(self):
         super(PermissionChinoTest, self).setUp()
+        groups = self.chino.groups.list()
+        for g in groups.groups:
+            self.chino.groups.delete(g._id, True)
         u_schemas = self.chino.user_schemas.list()
         for us in u_schemas.user_schemas:
             li = self.chino.users.list(us._id)
@@ -656,6 +703,7 @@ class PermissionChinoTest(BaseChinoTest):
         self.user1 = self.chino.users.create(user_schema_id=self.user_schema, username='test1', password=self.password,
                                              attributes=dict(first_name='user_1', last_name='doe',
                                                              email='test@chino.io'))
+
         self.group = self.chino.groups.create('testing', attributes=dict(hospital='test'))
 
         fields = [dict(name='fieldInt', type='integer'), dict(name='fieldString', type='string'),
@@ -663,11 +711,12 @@ class PermissionChinoTest(BaseChinoTest):
                   dict(name='fieldDateTime', type='datetime')]
         self.repo = self.chino.repositories.create('test')._id
         self.schema = self.chino.schemas.create(self.repo, 'test', fields)
+        app = self.chino.applications.create("test",grant_type='password')
         self.chino_user0 = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
-                                          url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret)
+                                          url=cfg.url, client_id=app.app_id, client_secret=app.app_secret)
         self.chino_user0.users.login(self.user0.username, self.password)
         self.chino_user1 = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
-                                          url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret)
+                                          url=cfg.url, client_id=app.app_id, client_secret=app.app_secret)
         self.chino_user1.users.login(self.user1.username, self.password)
 
     def tearDown(self):
@@ -677,7 +726,9 @@ class PermissionChinoTest(BaseChinoTest):
             for user in li.users:
                 self.chino.users.delete(user._id, force=True)
             self.chino.user_schemas.delete(us._id, True)
-        self.chino.groups.delete(self.group._id, True)
+        groups = self.chino.groups.list()
+        for g in groups.groups:
+            self.chino.groups.delete(g._id, True)
         try:
             self.chino.schemas.delete(self.schema, True, all_content=True)
             self.chino.repositories.delete(self.repo, True, all_content=True)

@@ -21,12 +21,10 @@ class CallError(ApiError):
             self.message = ', '.join(message)
         else:
             self.message = message
-
-
+            
 class CallFail(CallError):
     def __init__(self, code, message):
         super(CallFail, self).__init__(code, message)
-
 
 class MethodNotSupported(ClientError):
     def __init__(self):

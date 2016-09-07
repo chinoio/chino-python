@@ -535,11 +535,13 @@ class Permission(ChinoBaseObject):
 
 class _PermissionField(ChinoBaseObject):
 
-    def __init__(self, Authorize=None, Manage=None):
+    def __init__(self, Authorize=None, Manage=None, created_document=None):
         if Authorize:
             self.authorize = Authorize
         if Manage:
             self.manage = Manage
+        if created_document:
+            self.created_document = created_document
 
     # TODO: support functions to help in managing grants
 
@@ -553,6 +555,8 @@ class _PermissionField(ChinoBaseObject):
             res['authorize'] = self.authorize
         if hasattr(self, 'manage'):
             res['manage'] = self.manage
+        if hasattr(self, 'created_document'):
+            res['created_document'] = self.created_document
         return res
 
 
@@ -588,14 +592,12 @@ class Search(ChinoBaseObject):
         self.sort = []
         self.filters = []
         if sort:
-
             for s in sort:
                 if type(s) is dict:
                     self.sort.append(_SortField(**s))
                 else:
                     self.sort.append(s)
         if filters:
-
             for f in filters:
                 if type(f) is dict:
                     self.filters.append(_FilterField(**f))
