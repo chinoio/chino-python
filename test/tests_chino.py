@@ -20,7 +20,7 @@ class BaseChinoTest(unittest.TestCase):
     def setUp(self):
         self.chino = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
                                     url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret,timeout=20)
-        self.logger = logging.getLogger('test')
+        self.logger = logging.getLogger('test.api')
         self.logger.debug("log")
 
     def _equals(self, i_d1, i_d2):
@@ -647,6 +647,7 @@ class SearchChinoTest(BaseChinoTest):
         self.chino.repositories.delete(self.repo, True)
 
     def test_search(self):
+
         self.chino.documents.create(self.schema, content=dict(fieldInt=123, fieldString='test', fieldBool=False,
                                                               fieldDate='2015-02-19',
                                                               fieldDateTime='2015-02-19T16:39:47'))
@@ -678,9 +679,9 @@ class SearchChinoTest(BaseChinoTest):
                                                               fieldDate='2015-02-19',
                                                               fieldDateTime='2015-02-19T16:39:47'))
         # self.chino.searches.search(self.schema) # TODO: improve tests
-        time.sleep(1)  # wait the index max update time
+        time.sleep(10)  # wait the index max update time
         res = self.chino.searches.search(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
-        self.assertEqual(res.paging.total_count, 10, 'search not working')
+        self.assertEqual(res.paging.total_count, 10, res)
 
 class PermissionChinoTest(BaseChinoTest):
     def setUp(self):
