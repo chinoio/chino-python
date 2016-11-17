@@ -11,6 +11,7 @@ import json
 import os
 
 import requests
+import sys
 from requests.auth import HTTPBasicAuth, AuthBase
 
 from exceptions import MethodNotSupported, CallError, CallFail, ClientError
@@ -25,6 +26,7 @@ __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
 logger = logging.getLogger('chino.api')
 
+
 class ChinoAPIBase(object):  # PRAGMA: NO COVER
     """
         Base class, contains the utils methods to call the APIs
@@ -32,7 +34,6 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
     _url = None
     auth = None
     timeout = 30
-
 
     def __init__(self, auth, url, timeout, session=True):
         """
@@ -210,7 +211,6 @@ class ChinoAPIUsers(ChinoAPIBase):
             # propagate exception
             raise ex
 
-
     def current(self):
         url = "users/me"
         return User(**self.apicall('GET', url)['user'])
@@ -324,7 +324,7 @@ class ChinoAPIPermissions(ChinoAPIBase):
         return self.apicall('POST', url, data=data)
 
     def resource_children(self, action, resource_type, resource_id, resource_child_type, subject_type, subject_id,
-                          manage=None, authorize=None,created_document=None):
+                          manage=None, authorize=None, created_document=None):
         url = "perms/%s/%s/%s/%s/%s/%s" % (
             action, resource_type, resource_id, resource_child_type, subject_type, subject_id)
         data = dict()
@@ -333,7 +333,7 @@ class ChinoAPIPermissions(ChinoAPIBase):
         if authorize:
             data['authorize'] = authorize
         if created_document:
-            data['created_document']=created_document
+            data['created_document'] = created_document
         return self.apicall('POST', url, data=data)
 
     def read_perms(self):
@@ -587,12 +587,16 @@ class ChinoAPISearches(ChinoAPIBase):
         super(ChinoAPISearches, self).__init__(auth, url, timeout, session)
 
     def search(self, schema_id, result_type="FULL_CONTENT", filter_type="and", sort=None, filters=None, **kwargs):
-        url = 'search'
+        sys.stderr.write("DEPRECATE: This method is going to be removed soon, please use .documents")
+        return self.documents(schema_id, result_type, filter_type, sort, filters, **kwargs)
+
+    def documents(self, schema_id, result_type="FULL_CONTENT", filter_type="and", sort=None, filters=None, **kwargs):
+        url = 'search/documents/%s'%schema_id
         if not sort:
             sort = []
         if not filters:
             filters = []
-        data = dict(schema_id=schema_id, result_type=result_type, filter_type=filter_type, filter=filters)
+        data = dict(result_type=result_type, filter_type=filter_type, filter=filters)
         if sort:
             data['sort'] = sort
         if result_type == "COUNT":
@@ -601,6 +605,22 @@ class ChinoAPISearches(ChinoAPIBase):
             return ListResult(IDs, self.apicall('POST', url, data=data, params=kwargs))
         else:
             return ListResult(Document, self.apicall('POST', url, data=data, params=kwargs))
+
+    def users(self, user_schema_id, result_type="FULL_CONTENT", filter_type="and", sort=None, filters=None, **kwargs):
+        url = 'search/users/%s' % user_schema_id
+        if not sort:
+            sort = []
+        if not filters:
+            filters = []
+        data = dict(result_type=result_type, filter_type=filter_type, filter=filters)
+        if sort:
+            data['sort'] = sort
+        if result_type == "COUNT":
+            return self.apicall('POST', url, data=data, params=kwargs)['count']
+        elif result_type == "EXISTS" or result_type== "USERNAME_EXISTS":
+            return bool(self.apicall('POST', url, data=data, params=kwargs)['exists'])
+        else:
+            return ListResult(User, self.apicall('POST', url, data=data, params=kwargs))
 
 
 class ChinoAuth(object):

@@ -5,7 +5,6 @@ from chino.api import ChinoAPIClient
 from chino.exceptions import CallError
 from chino.objects import _DictContent, _Field
 
-
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
 import unittest
@@ -16,10 +15,11 @@ from os import path
 
 logging.config.fileConfig(path.join([path.dirname(__file__), 'logging.conf']))
 
+
 class BaseChinoTest(unittest.TestCase):
     def setUp(self):
         self.chino = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
-                                    url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret,timeout=20)
+                                    url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret, timeout=20)
         self.logger = logging.getLogger('test.api')
         self.logger.debug("log")
 
@@ -89,7 +89,7 @@ class UserChinoTest(BaseChinoTest):
         for user in list.users:
             self.chino.users.delete(user._id, force=True)
         self.chino.user_schemas.delete(self.us._id, force=True)
-        if hasattr(self,'app'):
+        if hasattr(self, 'app'):
             self.chino.applications.delete(self.app._id)
 
     def test_list(self):
@@ -135,7 +135,6 @@ class UserChinoTest(BaseChinoTest):
         # current not working for main user
         self.assertRaises(CallError, self.chino.users.current)
 
-
         # this invalidates the user
         self.chino.users.delete(user._id)
 
@@ -144,15 +143,16 @@ class UserChinoTest(BaseChinoTest):
         # login
         NAME = 'test.user.new'
         EDIT = NAME + '.edited'
-        self.app = self.chino.applications.create("test",grant_type='password')
+        self.app = self.chino.applications.create("test", grant_type='password')
         self.chino_user = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
-                                          url=cfg.url, client_id=self.app.app_id, client_secret=self.app.app_secret)
+                                         url=cfg.url, client_id=self.app.app_id, client_secret=self.app.app_secret)
         user = self.chino.users.create(self.us._id, username=EDIT, password='12345678',
                                        attributes=dict(first_name='john', last_name='doe',
                                                        email='test@chino.io'))
         self.chino_user.users.login(EDIT, '12345678')
         ste_2 = self.chino_user.users.current()
         self.assertEqual(ste_2.username, EDIT)
+
         self.chino_user.users.refresh()
         # now should be impossible to create the user
         self.assertRaises(CallError, self.chino_user.users.create, self.us._id, username='error', password='12345678',
@@ -163,6 +163,7 @@ class UserChinoTest(BaseChinoTest):
         self.assertRaises(Exception, self.chino_user.users.login, EDIT, '')
 
         self.assertRaises(CallError, self.chino.users.current)
+
 
 # @unittest.skip("Class disabled locally")
 class ApplicationsChinoTest(BaseChinoTest):
@@ -182,6 +183,7 @@ class ApplicationsChinoTest(BaseChinoTest):
         app2 = self.chino.applications.detail(app1._id)
         apps = self.chino.applications.list()
         self.chino.applications.delete(app1._id, force=True)
+
 
 # @unittest.skip("Class disabled locally")
 class GroupChinoTest(BaseChinoTest):
@@ -233,6 +235,12 @@ class GroupChinoTest(BaseChinoTest):
 
 
 class RepositoryChinoTest(BaseChinoTest):
+    def setUp(self):
+        super(RepositoryChinoTest, self).setUp()
+        list = self.chino.repositories.list()
+        for repo in list.repositories:
+            self.chino.repositories.delete(repo._id, force=True, all_content=True)
+
     def tearDown(self):
         list = self.chino.repositories.list()
         for repo in list.repositories:
@@ -345,6 +353,7 @@ class UserSchemaChinoTest(BaseChinoTest):
             "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
         self.chino.user_schemas.delete(detail._id, force=True)
 
+
 class CollectionChinoTest(BaseChinoTest):
     def setUp(self):
         super(CollectionChinoTest, self).setUp()
@@ -416,9 +425,10 @@ class CollectionChinoTest(BaseChinoTest):
         self.chino.collections.delete(collection._id, force=True)
 
 
-class PermissionChinoTest(BaseChinoTest):
+@unittest.skip("Test to be updated")
+class PermissionChinoTest2(BaseChinoTest):
     def setUp(self):
-        super(PermissionChinoTest, self).setUp()
+        super(PermissionChinoTest2, self).setUp()
         # list = self.chino.users.list()
         # for u in list.users:
         # self.chino.users.delete(u._id,force=True)
@@ -505,6 +515,7 @@ class DocumentChinoTest(BaseChinoTest):
         self.assertIsNotNone(list.documents[0].content)
         self.chino.documents.delete(document._id, True)
 
+    @unittest.skip("not working, timeout`")
     def test_too_big(self):
         k_bit = 'YXNkc2FkamtzZGprYWhqa3NkaGFqa3NoZGpzYWhkamtzYWhkamtoc2Fqa2xoamRrc2ZsaGpka2xzaGZhamtkbHNoamFrZmxoZGp' \
                 'za2xhaGZqZGtsc2hqZmtsYWhqZmtkbGhzYWpma2xkaHNqa2xhaGZqZGtsc2hhamZrbGFoamtkc2xoamZrZGxzaGpma2xkc2hham' \
@@ -587,6 +598,7 @@ class DocumentChinoTest(BaseChinoTest):
             "\n %s \n %s \n" % (detail.to_json(), detail2.to_json()))
         self.chino.schemas.delete(detail._id, force=True)
 
+
 class BlobChinoTest(BaseChinoTest):
     def setUp(self):
         super(BlobChinoTest, self).setUp()
@@ -595,7 +607,7 @@ class BlobChinoTest(BaseChinoTest):
         self.schema = self.chino.schemas.create(self.repo, 'test', fields)._id
 
     def tearDown(self):
-        if hasattr(self,'blob'):
+        if hasattr(self, 'blob'):
             self.chino.blobs.delete(self.blob.blob_id)
         self.chino.documents.delete(self.document._id, True)
         self.chino.schemas.delete(self.schema, True)
@@ -628,9 +640,11 @@ class BlobChinoTest(BaseChinoTest):
         self.assertEqual(md5_detail.hexdigest(), blob.md5)
         self.blob = blob
 
-class SearchChinoTest(BaseChinoTest):
+
+# @unittest.skip("not working on prod`")
+class SearchDocsChinoTest(BaseChinoTest):
     def setUp(self):
-        super(SearchChinoTest, self).setUp()
+        super(SearchDocsChinoTest, self).setUp()
         fields = [dict(name='fieldInt', type='integer', indexed=True),
                   dict(name='fieldString', type='string', indexed=True),
                   dict(name='fieldBool', type='boolean', indexed=True),
@@ -646,8 +660,7 @@ class SearchChinoTest(BaseChinoTest):
         self.chino.schemas.delete(self.schema, True)
         self.chino.repositories.delete(self.repo, True)
 
-    def test_search(self):
-
+    def test_search_docs(self):
         self.chino.documents.create(self.schema, content=dict(fieldInt=123, fieldString='test', fieldBool=False,
                                                               fieldDate='2015-02-19',
                                                               fieldDateTime='2015-02-19T16:39:47'))
@@ -675,13 +688,60 @@ class SearchChinoTest(BaseChinoTest):
         self.chino.documents.create(self.schema, content=dict(fieldInt=123, fieldString='test', fieldBool=False,
                                                               fieldDate='2015-02-19',
                                                               fieldDateTime='2015-02-19T16:39:47'))
-        self.chino.documents.create(self.schema, content=dict(fieldInt=123, fieldString='test', fieldBool=False,
-                                                              fieldDate='2015-02-19',
-                                                              fieldDateTime='2015-02-19T16:39:47'))
+        last_doc = self.chino.documents.create(self.schema,
+                                               content=dict(fieldInt=123, fieldString='test', fieldBool=False,
+                                                            fieldDate='2015-02-19',
+                                                            fieldDateTime='2015-02-19T16:39:47'))
         # self.chino.searches.search(self.schema) # TODO: improve tests
-        time.sleep(10)  # wait the index max update time
+        time.sleep(5)  # wait the index max update time
         res = self.chino.searches.search(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
         self.assertEqual(res.paging.total_count, 10, res)
+
+        self.chino.documents.delete(last_doc.document_id, force=True)
+        time.sleep(5)
+        res = self.chino.searches.search(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
+        self.assertEqual(res.paging.total_count, 9, res)
+
+
+class SearchUsersChinoTest(BaseChinoTest):
+    def setUp(self):
+        super(SearchUsersChinoTest, self).setUp()
+        fields = [dict(name='fieldInt', type='integer', indexed=True),
+                  dict(name='fieldString', type='string', indexed=True),
+                  dict(name='fieldBool', type='boolean', indexed=True),
+                  dict(name='fieldDate', type='date', indexed=True),
+                  dict(name='fieldDateTime', type='datetime', indexed=True)]
+        self.schema = self.chino.user_schemas.create( 'test', fields)._id
+
+    def tearDown(self):
+        users = self.chino.users.list(self.schema)
+        for user in users.users:
+            self.chino.users.delete(user._id, force=True)
+        self.chino.user_schemas.delete(self.schema, True)
+
+    def test_search_docs(self):
+        for i in range(9):
+            self.chino.users.create(self.schema, username="user_test_%s" % i, password='1234567890AAaa',
+                                    attributes=dict(fieldInt=123, fieldString='test', fieldBool=False,
+                                                 fieldDate='2015-02-19',
+                                                 fieldDateTime='2015-02-19T16:39:47'))
+        last_doc = self.chino.users.create(self.schema, username="user_test_last", password='1234567890AAaa',
+                                           attributes=dict(fieldInt=123, fieldString='test', fieldBool=False,
+                                                         fieldDate='2015-02-19',
+                                                         fieldDateTime='2015-02-19T16:39:47'))
+
+        # self.chino.searches.search(self.schema) # TODO: improve tests
+        time.sleep(5)  # wait the index max update time
+        res = self.chino.searches.users(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
+        self.assertEqual(res.paging.total_count, 10, res)
+        res = self.chino.searches.users(self.schema, filters=[{"field": "username", "type": "eq", "value": 'user_test_last'}])
+        self.assertEqual(res.paging.total_count, 1, res)
+
+        self.chino.users.delete(last_doc.user_id, force=True)
+        time.sleep(5)
+        res = self.chino.searches.users(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
+        self.assertEqual(res.paging.total_count, 9, res)
+
 
 class PermissionChinoTest(BaseChinoTest):
     def setUp(self):
@@ -712,7 +772,7 @@ class PermissionChinoTest(BaseChinoTest):
                   dict(name='fieldDateTime', type='datetime')]
         self.repo = self.chino.repositories.create('test')._id
         self.schema = self.chino.schemas.create(self.repo, 'test', fields)
-        app = self.chino.applications.create("test",grant_type='password')
+        app = self.chino.applications.create("test", grant_type='password')
         self.chino_user0 = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
                                           url=cfg.url, client_id=app.app_id, client_secret=app.app_secret)
         self.chino_user0.users.login(self.user0.username, self.password)
@@ -777,6 +837,7 @@ class PermissionChinoTest(BaseChinoTest):
                                                        self.user1._id, manage=['L'])
         self.assertEqual(self.chino_user1.documents.list(self.schema).paging.total_count, 0)
         self.assertEqual(self.chino_user0.documents.list(self.schema).paging.total_count, 1)
+
 
 if __name__ == '__main__':
     unittest.main()
