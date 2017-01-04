@@ -14,8 +14,8 @@ import requests
 import sys
 from requests.auth import HTTPBasicAuth, AuthBase
 
-from exceptions import MethodNotSupported, CallError, CallFail, ClientError
-from objects import Repository, ListResult, User, Group, Schema, Document, Blob, BlobDetail, UserSchema, \
+from .exceptions import MethodNotSupported, CallError, CallFail, ClientError
+from .objects import Repository, ListResult, User, Group, Schema, Document, Blob, BlobDetail, UserSchema, \
     Collection, Permission, IDs, Application
 
 import logging
