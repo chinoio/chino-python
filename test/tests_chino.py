@@ -693,15 +693,20 @@ class SearchDocsChinoTest(BaseChinoTest):
                                                             fieldDate='2015-02-19',
                                                             fieldDateTime='2015-02-19T16:39:47'))
         # self.chino.searches.search(self.schema) # TODO: improve tests
-        time.sleep(5)  # wait the index max update time
-        res = self.chino.searches.search(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
+        time.sleep(10)  # wait the index max update time
+        res = self.chino.searches.documents(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
         self.assertEqual(res.paging.total_count, 10, res)
 
         self.chino.documents.delete(last_doc.document_id, force=True)
-        time.sleep(5)
-        res = self.chino.searches.search(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
+        time.sleep(10)
+        res = self.chino.searches.documents(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
         self.assertEqual(res.paging.total_count, 9, res)
-
+        # print res.documents
+        ids = []
+        for d in res.documents[:3]:
+            ids.append(d._id)
+        res = self.chino.searches.documents(self.schema, filters=[{"field": "_id", "type": "in", "value": ids}])
+        self.assertEqual(res.paging.total_count, 3, res)
 
 class SearchUsersChinoTest(BaseChinoTest):
     def setUp(self):
