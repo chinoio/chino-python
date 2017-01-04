@@ -1,7 +1,10 @@
-import os
-from setuptools import setup
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
-
+# Always prefer setuptools over distutils
+from setuptools import setup, find_packages
+# To use a consistent encoding
+from codecs import open
+from os import path
+here = path.abspath(path.dirname(__file__))
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
 # README file and 2) it's easier to type in the README file than to put a raw
@@ -9,11 +12,14 @@ __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+    long_description = f.read()
 
 
 setup(name='chino',
-      version='1.0',
+      version='1.0.1',
       description='Wrapper for Chino.io API',
+      long_description=long_description,
       author='Stefano Tranquillini',
       author_email='stefano@chino.io',
       url='https://www.chino.io',
@@ -25,7 +31,10 @@ setup(name='chino',
       license = 'CC BY-SA 4.0',
       install_requires=['requests >=2.9.1, <=3'],
       classifiers=[
-           "Development Status :: 5 - Stable",
-          "Topic :: Software Development",
-      ],
+           "Topic :: Software Development",
+           "Development Status :: 5 - Production/Stable",
+           'Programming Language :: Python :: 2',
+
+        'Programming Language :: Python :: 3',
+          ],
       )

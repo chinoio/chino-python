@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-client for Chino.io API
-~~~~~~~~~~~~~~~~~~~~~
+Chino.io API Client Docs
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 :copyright: (c) 2015 by Chino SrlS
 :license: Apache 2.0, see LICENSE for more details.
