@@ -4,9 +4,7 @@
 Docs is available [here](http://docs.chino.io)
 
 ## Install via pip
-`(sudo) pip install git+https://github.com/chinoio/chino-python.git`
-
-> this is for the current branch, specify the branch after `@`
+`pip install chino`
 
 ##How to use it
 First create a variable from the `Chino` class
