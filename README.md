@@ -4,6 +4,10 @@
 Docs is available [here](http://docs.chino.io)
 
 ## Install via pip
+
+> WORKS ONLY FOR PYTHON 2.X (2.7 tested)
+> 3.X is under development
+
 `pip install chino`
 
 ##How to use it
