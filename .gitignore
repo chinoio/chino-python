@@ -74,3 +74,8 @@ test_log.py
 uncap_script.py
 api.oauth.py
 script_loukas.py
+*dummy*
+snippet*
+script*
+*.sh
+logging.conf
