@@ -1,15 +1,13 @@
-.. CHINO.io Python wrapper documentation master file, created by
-   sphinx-quickstart on Sat Feb 21 18:21:37 2015.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. CHINO.io Python wrapper
 
-CHINO.io PYTHON Client
-======================
+This is the wrapper for the API of https://chino.io
 
-.. autoclass:: chino.api.ChinoAPI
-    :members:
-    :private-members:
+More info: https://github.com/chinoio/chino-python
 
+.. toctree::
+
+    install
+    docs
 
 Indices and tables
 ==================
@@ -17,4 +15,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
