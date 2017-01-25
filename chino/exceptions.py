@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 __author__ = 'Stefano Tranquillini <stefano@chino.io>'
 
 
@@ -21,12 +24,10 @@ class CallError(ApiError):
             self.message = ', '.join(message)
         else:
             self.message = message
-
-
+            
 class CallFail(CallError):
     def __init__(self, code, message):
         super(CallFail, self).__init__(code, message)
-
 
 class MethodNotSupported(ClientError):
     def __init__(self):
