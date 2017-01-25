@@ -56,10 +56,12 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
         method = method.upper()
         url = self._url + url
         if method == 'CHUNK':
-            logger.debug("calling %s (PUT) %s p(%s) d(--) " % (method, url, params))
+            logger.debug("calling %s (PUT) %s p(%s) d(--) " %
+                         (method, url, params))
             res = self._apicall_chunk(url, data, **params)
         else:
-            logger.debug("calling %s %s p(%s) d(%s) " % (method, url, params, str(data)))
+            logger.debug("calling %s %s p(%s) d(%s) " %
+                         (method, url, params, str(data)))
             if method == 'GET':
                 res = self._apicall_get(url, params)
             elif method == 'POST':
@@ -85,7 +87,7 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
 
     def _apicall_chunk(self, url, data, offset, length):
         r = self.req.put(url, data=data, auth=self._get_auth(),
-                         headers={'Content-Type': 'application/octet-stream', 'offset': offset, 'length': length})
+                         headers={'Content-Type': 'application/octet-stream', 'offset': str(offset), 'length': str(length)})
         return r
 
     def _apicall_put(self, url, data):
@@ -93,7 +95,8 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
             d = data.to_dict()
         else:
             d = data
-        r = self.req.put(url, auth=self._get_auth(), data=json.dumps(d), timeout=self.timeout)
+        r = self.req.put(url, auth=self._get_auth(),
+                         data=json.dumps(d), timeout=self.timeout)
         return r
 
     def _apicall_patch(self, url, data):
@@ -101,26 +104,31 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
             d = data.to_dict()
         else:
             d = data
-        r = self.req.patch(url, auth=self._get_auth(), data=json.dumps(d), timeout=self.timeout)
+        r = self.req.patch(url, auth=self._get_auth(),
+                           data=json.dumps(d), timeout=self.timeout)
         return r
 
     def _apicall_post(self, url, data, params, form=None):
         if data is None and form is not None:
-            r = self.req.post(url, auth=self._get_auth(), params=params, data=form, timeout=self.timeout)
+            r = self.req.post(url, auth=self._get_auth(),
+                              params=params, data=form, timeout=self.timeout)
         else:
             if hasattr(data, 'to_dict()'):
                 d = data.to_dict()
             else:
                 d = data
-            r = self.req.post(url, auth=self._get_auth(), params=params, data=json.dumps(d), timeout=self.timeout)
+            r = self.req.post(url, auth=self._get_auth(
+            ), params=params, data=json.dumps(d), timeout=self.timeout)
         return r
 
     def _apicall_get(self, url, params):
-        r = self.req.get(url, auth=self._get_auth(), params=params, timeout=self.timeout)
+        r = self.req.get(url, auth=self._get_auth(),
+                         params=params, timeout=self.timeout)
         return r
 
     def _apicall_delete(self, url, params):
-        r = self.req.delete(url, auth=self._get_auth(), params=params, timeout=self.timeout)
+        r = self.req.delete(url, auth=self._get_auth(),
+                            params=params, timeout=self.timeout)
         return r
 
     def _get_auth(self):
@@ -135,9 +143,17 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
             try:
                 status = r.json()['result']
             except:
-                raise CallError(code=500, message="Something went wrong with the server")
+                logger.exception("decoding result")
+                try:
+                    message = r.json()['message']
+                except:
+                    logger.exception("decoding message")
+                    message = r.text
+                raise CallError(
+                    code=500, message=message )
             if status == 'error':
-                raise CallError(code=r.status_code, message=r.json()['message'])
+                raise CallError(code=r.status_code,
+                                message=r.json()['message'])
             elif status == 'fail':
                 raise CallFail(code=r.status_code, message=r.json()['data'])
             else:
@@ -145,6 +161,7 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
 
 
 class ChinoAPIUsers(ChinoAPIBase):
+
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPIUsers, self).__init__(auth, url, timeout, session)
 
@@ -177,7 +194,8 @@ class ChinoAPIUsers(ChinoAPIBase):
         auth = self.auth
         # self.auth = None
         url = "auth/token/"
-        pars = dict(username=username, password=password, grant_type='password')
+        pars = dict(username=username, password=password,
+                    grant_type='password')
         try:
             self.auth.set_auth_application()
             result = self.apicall('POST', url, form=pars)
@@ -239,7 +257,8 @@ class ChinoAPIUsers(ChinoAPIBase):
         return User(**self.apicall('GET', url)['user'])
 
     def create(self, user_schema_id, username, password, attributes=None):
-        data = dict(username=username, password=password, attributes=attributes)
+        data = dict(username=username, password=password,
+                    attributes=attributes)
         url = "user_schemas/%s/users" % user_schema_id
         return User(**self.apicall('POST', url, data=data)['user'])
 
@@ -263,6 +282,7 @@ class ChinoAPIUsers(ChinoAPIBase):
 
 
 class ChinoAPIGroups(ChinoAPIBase):
+
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPIGroups, self).__init__(auth, url, timeout, session)
 
@@ -301,11 +321,13 @@ class ChinoAPIGroups(ChinoAPIBase):
 
 
 class ChinoAPIPermissions(ChinoAPIBase):
+
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPIPermissions, self).__init__(auth, url, timeout, session)
 
     def resources(self, action, resource_type, subject_type, subject_id, manage=None, authorize=None):
-        url = "perms/%s/%s/%s/%s" % (action, resource_type, subject_type, subject_id)
+        url = "perms/%s/%s/%s/%s" % (action,
+                                     resource_type, subject_type, subject_id)
         data = dict()
         if manage:
             data['manage'] = manage
@@ -315,7 +337,8 @@ class ChinoAPIPermissions(ChinoAPIBase):
 
     def resource(self, action, resource_type, resource_id, subject_type, subject_id,
                  manage=None, authorize=None):
-        url = "perms/%s/%s/%s/%s/%s" % (action, resource_type, resource_id, subject_type, subject_id)
+        url = "perms/%s/%s/%s/%s/%s" % (action, resource_type,
+                                        resource_id, subject_type, subject_id)
         data = dict()
         if manage:
             data['manage'] = manage
@@ -355,6 +378,7 @@ class ChinoAPIPermissions(ChinoAPIBase):
 
 
 class ChinoAPIRepositories(ChinoAPIBase):
+
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPIRepositories, self).__init__(auth, url, timeout, session)
 
@@ -418,6 +442,7 @@ class ChinoAPIRepositories(ChinoAPIBase):
 
 
 class ChinoAPISchemas(ChinoAPIBase):
+
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPISchemas, self).__init__(auth, url, timeout, session)
 
@@ -470,6 +495,7 @@ class ChinoAPISchemas(ChinoAPIBase):
 
 
 class ChinoAPIDocuments(ChinoAPIBase):
+
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPIDocuments, self).__init__(auth, url, timeout, session)
 
@@ -503,6 +529,7 @@ class ChinoAPIDocuments(ChinoAPIBase):
 
 
 class ChinoAPIBlobs(ChinoAPIBase):
+
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPIBlobs, self).__init__(auth, url, timeout, session)
 
@@ -510,7 +537,8 @@ class ChinoAPIBlobs(ChinoAPIBase):
         if not os.path.exists(file_path):
             raise ClientError("File not found")
         # start the blob
-        blob_data = self.start(document_id, blob_field_name, os.path.basename(file_path))
+        blob_data = self.start(document_id, blob_field_name,
+                               os.path.basename(file_path))
         # get the id and initial offset
         upload_id = blob_data['upload_id']
         offset = 0
@@ -534,7 +562,9 @@ class ChinoAPIBlobs(ChinoAPIBase):
                 length += 1
                 chunk += byte
                 # if we have read enough bytes
+
                 if length == chunk_size:
+                    logger.debug("chunk %s lenght %s" % (chunk_size, length))
                     # send a chunk
                     self.chunk(upload_id, chunk, length=length, offset=offset)
                     # update the hash
@@ -544,6 +574,7 @@ class ChinoAPIBlobs(ChinoAPIBase):
                     length = 0
         if length != 0:
             # send the last chunk
+            logger.debug("last chunk %s lenght %s" % (chunk_size, length))
             self.chunk(upload_id, chunk, length=length, offset=offset)
             sha1.update(chunk)
         rd.close()
@@ -583,20 +614,23 @@ class ChinoAPIBlobs(ChinoAPIBase):
 
 
 class ChinoAPISearches(ChinoAPIBase):
+
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPISearches, self).__init__(auth, url, timeout, session)
 
     def search(self, schema_id, result_type="FULL_CONTENT", filter_type="and", sort=None, filters=None, **kwargs):
-        sys.stderr.write("DEPRECATE: This method is going to be removed soon, please use .documents")
+        sys.stderr.write(
+            "DEPRECATE: This method is going to be removed soon, please use .documents")
         return self.documents(schema_id, result_type, filter_type, sort, filters, **kwargs)
 
     def documents(self, schema_id, result_type="FULL_CONTENT", filter_type="and", sort=None, filters=None, **kwargs):
-        url = 'search/documents/%s'%schema_id
+        url = 'search/documents/%s' % schema_id
         if not sort:
             sort = []
         if not filters:
             filters = []
-        data = dict(result_type=result_type, filter_type=filter_type, filter=filters)
+        data = dict(result_type=result_type,
+                    filter_type=filter_type, filter=filters)
         if sort:
             data['sort'] = sort
         if result_type == "COUNT":
@@ -612,12 +646,13 @@ class ChinoAPISearches(ChinoAPIBase):
             sort = []
         if not filters:
             filters = []
-        data = dict(result_type=result_type, filter_type=filter_type, filter=filters)
+        data = dict(result_type=result_type,
+                    filter_type=filter_type, filter=filters)
         if sort:
             data['sort'] = sort
         if result_type == "COUNT":
             return self.apicall('POST', url, data=data, params=kwargs)['count']
-        elif result_type == "EXISTS" or result_type== "USERNAME_EXISTS":
+        elif result_type == "EXISTS" or result_type == "USERNAME_EXISTS":
             return bool(self.apicall('POST', url, data=data, params=kwargs)['exists'])
         else:
             return ListResult(User, self.apicall('POST', url, data=data, params=kwargs))
@@ -682,6 +717,7 @@ class HTTPBearerAuth(AuthBase):
 
 
 class ChinoAPIUserSchemas(ChinoAPIBase):
+
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPIUserSchemas, self).__init__(auth, url, timeout, session)
 
@@ -737,6 +773,7 @@ class ChinoAPIUserSchemas(ChinoAPIBase):
 
 
 class ChinoAPICollections(ChinoAPIBase):
+
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPICollections, self).__init__(auth, url, timeout, session)
 
@@ -802,6 +839,7 @@ class ChinoAPICollections(ChinoAPIBase):
 
 
 class ChinoAPIApplication(ChinoAPIBase):
+
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPIApplication, self).__init__(auth, url, timeout, session)
 
@@ -822,7 +860,8 @@ class ChinoAPIApplication(ChinoAPIBase):
         :param name: (str) the name of the Application
         :return: (dict) the Application.
         """
-        data = dict(name=name, grant_type=grant_type, redirect_url=redirect_url)
+        data = dict(name=name, grant_type=grant_type,
+                    redirect_url=redirect_url)
         url = "auth/applications"
         return Application(**self.apicall('POST', url, data=data)[Application.__str_name__])
 
@@ -876,16 +915,28 @@ class ChinoAPIClient(object):
             version += '/'
         final_url = url + version
         self.final_url = final_url
-        auth = ChinoAuth(customer_id, customer_key, bearer_token, client_id, client_secret)
+        auth = ChinoAuth(customer_id, customer_key,
+                         bearer_token, client_id, client_secret)
         self.auth = auth
-        self.users = ChinoAPIUsers(auth, final_url, timeout=timeout, session=session)
-        self.applications = ChinoAPIApplication(auth, final_url, timeout=timeout, session=session)
-        self.groups = ChinoAPIGroups(auth, final_url, timeout=timeout, session=session)
-        self.permissions = ChinoAPIPermissions(auth, final_url, timeout=timeout, session=session)
-        self.repositories = ChinoAPIRepositories(auth, final_url, timeout=timeout, session=session)
-        self.schemas = ChinoAPISchemas(auth, final_url, timeout=timeout, session=session)
-        self.user_schemas = ChinoAPIUserSchemas(auth, final_url, timeout=timeout, session=session)
-        self.collections = ChinoAPICollections(auth, final_url, timeout=timeout, session=session)
-        self.documents = ChinoAPIDocuments(auth, final_url, timeout=timeout, session=session)
-        self.blobs = ChinoAPIBlobs(auth, final_url, timeout=timeout, session=session)
-        self.searches = ChinoAPISearches(auth, final_url, timeout=timeout, session=session)
+        self.users = ChinoAPIUsers(
+            auth, final_url, timeout=timeout, session=session)
+        self.applications = ChinoAPIApplication(
+            auth, final_url, timeout=timeout, session=session)
+        self.groups = ChinoAPIGroups(
+            auth, final_url, timeout=timeout, session=session)
+        self.permissions = ChinoAPIPermissions(
+            auth, final_url, timeout=timeout, session=session)
+        self.repositories = ChinoAPIRepositories(
+            auth, final_url, timeout=timeout, session=session)
+        self.schemas = ChinoAPISchemas(
+            auth, final_url, timeout=timeout, session=session)
+        self.user_schemas = ChinoAPIUserSchemas(
+            auth, final_url, timeout=timeout, session=session)
+        self.collections = ChinoAPICollections(
+            auth, final_url, timeout=timeout, session=session)
+        self.documents = ChinoAPIDocuments(
+            auth, final_url, timeout=timeout, session=session)
+        self.blobs = ChinoAPIBlobs(
+            auth, final_url, timeout=timeout, session=session)
+        self.searches = ChinoAPISearches(
+            auth, final_url, timeout=timeout, session=session)

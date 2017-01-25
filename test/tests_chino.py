@@ -1,6 +1,6 @@
 import time
 
-import cfg
+from . import cfg
 from chino.api import ChinoAPIClient
 from chino.exceptions import CallError
 from chino.objects import _DictContent, _Field
@@ -19,7 +19,7 @@ logging.config.fileConfig(path.join([path.dirname(__file__), 'logging.conf']))
 class BaseChinoTest(unittest.TestCase):
     def setUp(self):
         self.chino = ChinoAPIClient(customer_id=cfg.customer_id, customer_key=cfg.customer_key,
-                                    url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret, timeout=20)
+                                    url=cfg.url, client_id=cfg.client_id, client_secret=cfg.client_secret, timeout=3600)
         self.logger = logging.getLogger('test.api')
         self.logger.debug("log")
 
@@ -515,7 +515,7 @@ class DocumentChinoTest(BaseChinoTest):
         self.assertIsNotNone(list.documents[0].content)
         self.chino.documents.delete(document._id, True)
 
-    @unittest.skip("not working, timeout`")
+    # @unittest.skip("not working, timeout`")
     def test_too_big(self):
         k_bit = 'YXNkc2FkamtzZGprYWhqa3NkaGFqa3NoZGpzYWhkamtzYWhkamtoc2Fqa2xoamRrc2ZsaGpka2xzaGZhamtkbHNoamFrZmxoZGp' \
                 'za2xhaGZqZGtsc2hqZmtsYWhqZmtkbGhzYWpma2xkaHNqa2xhaGZqZGtsc2hhamZrbGFoamtkc2xoamZrZGxzaGpma2xkc2hham' \
@@ -613,6 +613,7 @@ class BlobChinoTest(BaseChinoTest):
         self.chino.schemas.delete(self.schema, True)
         self.chino.repositories.delete(self.repo, True)
 
+    # @unittest.skip("not working on prod")
     def test_blob(self):
         self.document = self.chino.documents.create(self.schema, content=dict(name='test'))
         blob = self.chino.blobs.send(self.document._id, 'blobTest', 'logo.png', chunk_size=1024)
@@ -626,7 +627,7 @@ class BlobChinoTest(BaseChinoTest):
         # self.assertEqual(md5_detail.digest(), md5_original.digest())
         self.assertEqual(md5_detail.hexdigest(), blob.md5)
         self.blob = blob
-
+        self.chino.blobs.delete(self.blob.blob_id)
         blob = self.chino.blobs.send(self.document._id, 'blobTest', 'test.sh', chunk_size=1024)
 
         blob_detail = self.chino.blobs.detail(blob.blob_id)
@@ -639,6 +640,26 @@ class BlobChinoTest(BaseChinoTest):
         # self.assertEqual(md5_detail.digest(), md5_original.digest())
         self.assertEqual(md5_detail.hexdigest(), blob.md5)
         self.blob = blob
+
+    # @unittest.skip("not working on prod")
+    def test_large_blob(self):
+        self.document = self.chino.documents.create(self.schema, content=dict(name='test'))
+        import random
+        blob = self.chino.blobs.send(self.document._id, 'blobTest', 'dummy.file', chunk_size=random.choice([1,10])*1024*1024)
+        blob_detail = self.chino.blobs.detail(blob.blob_id)
+        rw = open("out" + blob_detail.filename, "wb")
+        rw.write(blob_detail.content)
+        rw.close()
+        # rd = open('test/logo.png', "rb")
+        md5_detail = hashlib.md5()
+        md5_detail.update(blob_detail.content)
+        sha1_detail = hashlib.sha1()
+        sha1_detail.update(blob_detail.content)
+        # self.assertEqual(md5_detail.digest(), md5_original.digest())
+        self.assertEqual(md5_detail.hexdigest(), blob.md5)
+        self.assertEqual(sha1_detail.hexdigest(), blob.sha1)
+        # self.blob = blob
+
 
 
 # @unittest.skip("not working on prod`")
