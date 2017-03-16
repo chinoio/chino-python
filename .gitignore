@@ -79,3 +79,9 @@ snippet*
 script*
 *.sh
 logging.conf
+prod.env
+test.env
+cfg0.py
+test/tests_chino_data.py
+test/tests_paolo.py
+test/cover
