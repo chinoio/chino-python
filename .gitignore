@@ -55,7 +55,6 @@ docs/_build/
 target/
 
 _build
-cfg.py
 Chino_API_Python_.egg-info
 build
 chino.egg-info
