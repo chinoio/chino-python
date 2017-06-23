@@ -1,9 +1,18 @@
 language: python
 branches:
   only:
-     - master
+  - master
 python:
-  - "2.7"
-  - "3.6"
-install: "pip install -r requirements.txt"
+- '2.7'
+- '3.6'
+install: pip install -r requirements.txt
 script: nosetests
+deploy:
+  provider: pypi
+  user: esseti
+  password:
+    secure: uOeHAPkTMZ9+rmLREJxJyqCX7hGw5yvPTho80nMDCjCCJPX9m6Ul2rCQoT30kcS+/GMrLwQM/UR3/nPNRJrzwUzwZKYReOhJ2CBsNTxQD+NuynyhuaZfiE5tLJDrG0+cGEvmaO/jiDU3dXJkv78NpLIvyZT+oWkoLIANAMNQE2t8c+VbyqK44zfXjIvJY68LxsCUyWosMXJ3sTuImiotPz9LHAifWX2pZM0OuwDxU2zD6ziWxKULAC35qqAUsOVT99mEF1DC4pfgmT+pkldUB9T3Jjr6Vigt3+b+buQRDj2CjxVMzyYxyvtukkrSJBbxIoaXthP2GJbKpaJyk61kfaf7qu5C3ckCB4nuzz9GbEzuAs7+GsEVWoURlCcRONucxPMNXKWLgyTqUnwdD2ZS1+nyJ65jzepFxFUE4/dvHs9QSZ/Yf6eh6PchnUfurc5QzxWjxj1muPNC2+z6BvliL5B4Atv3X856kmrN5Il97cOjm5UM5aLzwM0A37IUmPVJdbGkYhxA/OKA5Zx22gBbvSRrR8AcOUKRDBTPQs9MoVXW5Ka5A0gj9qyJri2aHJfQvawH3me7kO0vNAS9MNCdc7Xl8gxp9TQc73AYu84FtXos+YTkE+TdMOTqxmz5LHOJtf0Wzw9/XjyLRGZ3UZiDZLk6SeMeRrHz5RaAzfmJkzE=
+  on:
+    tags: true
+    distributions: sdist bdist_wheel
+    repo: chinoio/chino-python

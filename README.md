@@ -1,4 +1,5 @@
 #  CHINO.io Python client #
+
 *Official* Python wrapper for **CHINO.io** API,
 
 Docs is available [here](http://docs.chino.io)
@@ -204,5 +205,5 @@ use issues of github
 
 ### Build for pip (internal notes)
 - `rm -r dist/*`
-- `python setup.py bdist_wheel` `python3 setup.py bdist_wheel` 
+- `python setup.py bdist_wheel` `python3 setup.py bdist_wheel`
 - `twine upload dist/*`

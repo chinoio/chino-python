@@ -12,7 +12,7 @@ import logging
 import logging.config
 import hashlib
 from os import path
-
+import os
 
 # logging.config.fileConfig(path.join(path.dirname(__file__), 'logging.conf'))
 
@@ -616,7 +616,8 @@ class BlobChinoTest(BaseChinoTest):
     # @unittest.skip("not working on prod")
     def test_blob(self):
         self.document = self.chino.documents.create(self.schema, content=dict(name='test'))
-        blob = self.chino.blobs.send(self.document._id, 'blobTest', 'logo.png', chunk_size=1024)
+        src = os.path.join(os.path.sep, os.path.dirname(__file__), 'logo.png')
+        blob = self.chino.blobs.send(self.document._id, 'blobTest', str(src), chunk_size=32*1024)
         blob_detail = self.chino.blobs.detail(blob.blob_id)
         rw = open("out" + blob_detail.filename, "wb")
         rw.write(blob_detail.content)
@@ -628,7 +629,8 @@ class BlobChinoTest(BaseChinoTest):
         self.assertEqual(md5_detail.hexdigest(), blob.md5)
         self.blob = blob
         self.chino.blobs.delete(self.blob.blob_id)
-        blob = self.chino.blobs.send(self.document._id, 'blobTest', 'test.sh', chunk_size=1024)
+        src = os.path.join(os.path.sep, os.path.dirname(__file__), 'test.sh')
+        blob = self.chino.blobs.send(self.document._id, 'blobTest', str(src), chunk_size=32*1024)
 
         blob_detail = self.chino.blobs.detail(blob.blob_id)
         rw = open("out" + blob_detail.filename, "wb")
@@ -641,7 +643,7 @@ class BlobChinoTest(BaseChinoTest):
         self.assertEqual(md5_detail.hexdigest(), blob.md5)
         self.blob = blob
 
-    # @unittest.skip("not working on prod")
+    @unittest.skip("Skipping for size")
     def test_large_blob(self):
         self.document = self.chino.documents.create(self.schema, content=dict(name='test'))
         import random
