@@ -37,7 +37,7 @@ class ChinoBaseObject(object):
 
 class Paging(ChinoBaseObject):
 
-    def __init__(self, offset=0, limit=100, count=-1, total_count=-1):
+    def __init__(self, offset=0, limit=100, count=-1, total_count=-1, **kwargs):
         super(Paging, self).__init__()
         self.offset = offset
         self.limit = limit
@@ -56,7 +56,7 @@ class Paging(ChinoBaseObject):
 
 class ListResult(ChinoBaseObject):
 
-    def __init__(self, class_obj, result):
+    def __init__(self, class_obj, result, **kwargs):
         self.paging = Paging(result['offset'], result['limit'], result[
                              'count'], result['total_count'])
         results = []
@@ -134,7 +134,7 @@ class Repository(ChinoBaseObject):
     def _id(self):
         return self.repository_id
 
-    def __init__(self, repository_id=None, insert_date=None, last_update=None, description=None, is_active=True):
+    def __init__(self, repository_id=None, insert_date=None, last_update=None, description=None, is_active=True, **kwargs):
         self.repository_id = repository_id
         self.description = description
         self.insert_date = insert_date
@@ -184,7 +184,7 @@ class User(ChinoBaseObject):
 
     def __init__(self, user_id=None, username=None, insert_date=None, schema_id=None, last_update=None, is_active=None,
                  attributes=None,
-                 groups=None, password=None):
+                 groups=None, password=None, **kwargs):
         self.username = username
         self.user_id = user_id
         self.insert_date = insert_date
@@ -231,7 +231,7 @@ class Group(ChinoBaseObject):
         return res
 
     def __init__(self, group_id=None, group_name=None, insert_date=None, is_active=None, last_update=None,
-                 attributes=None):
+                 attributes=None, **kwargs):
         """Constructor for Group"""
         self.group_id = group_id
         self.group_name = group_name
@@ -276,7 +276,7 @@ class Document(ChinoBaseObject):
         return res
 
     def __init__(self, document_id=None, repository_id=None, schema_id=None, insert_date=None, last_update=True,
-                 content=None, is_active=False):
+                 content=None, is_active=False, **kwargs):
         self.document_id = document_id
         self.repository_id = repository_id
         self.schema_id = schema_id
@@ -375,7 +375,7 @@ class Schema(ChinoBaseObject):
         return self.schema_id
 
     def __init__(self, schema_id=None, description=None, repository_id=None, is_active=None, insert_date=None,
-                 last_update=None, structure=None, ):
+                 last_update=None, structure=None, **kwargs):
         self.schema_id = schema_id
         self.description = description
         self.repository_id = repository_id
@@ -406,7 +406,7 @@ class UserSchema(ChinoBaseObject):
         return self.user_schema_id
 
     def __init__(self, user_schema_id=None, description=None, is_active=None, insert_date=None,
-                 last_update=None, structure=None, groups=None):
+                 last_update=None, structure=None, groups=None, **kwargs):
         self.user_schema_id = user_schema_id
         self.description = description
         self.groups = groups
@@ -442,7 +442,7 @@ class Collection(ChinoBaseObject):
         return self.collection_id
 
     def __init__(self, collection_id=None, name=None, insert_date=None, last_update=True,
-                 content=None, is_active=False):
+                 content=None, is_active=False, **kwargs):
         self.collection_id = collection_id
         self.name = name
         self.insert_date = insert_date
@@ -470,13 +470,13 @@ class Application(ChinoBaseObject):
     def _id(self):
         return self.app_id
 
-    def __init__(self, app_name=None, app_secret=None, app_id=None, redirect_url=None, grant_type=None):
+    def __init__(self, app_name=None, app_secret=None, app_id=None, redirect_url=None, grant_type=None,  **kwargs):
         self.app_name = app_name
         self.app_secret = app_secret
         self.app_id = app_id
         self.redirect_url = redirect_url
         self.grant_type = grant_type
-
+        # self.client_type = client_type
 
 class Permission(ChinoBaseObject):
     """
@@ -519,7 +519,7 @@ class Permission(ChinoBaseObject):
     def _id(self):
         return "-"
 
-    def __init__(self, access=None, permission=None, resource_type=None, resource_id=None, parent_id=None):
+    def __init__(self, access=None, permission=None, resource_type=None, resource_id=None, parent_id=None, **kwargs):
         self.access = access
         if permission:
             self.permission = _PermissionField(**permission)
@@ -538,7 +538,7 @@ class Permission(ChinoBaseObject):
 
 class _PermissionField(ChinoBaseObject):
 
-    def __init__(self, Authorize=None, Manage=None, created_document=None):
+    def __init__(self, Authorize=None, Manage=None, created_document=None, **kwargs):
         if Authorize:
             self.authorize = Authorize
         if Manage:
@@ -565,7 +565,7 @@ class _PermissionField(ChinoBaseObject):
 
 class _SortField(ChinoBaseObject):
 
-    def __init__(self, field, order='asc'):
+    def __init__(self, field, order='asc', **kwargs):
         self.field = field
         self.order = order
 
@@ -576,7 +576,7 @@ class _SortField(ChinoBaseObject):
 
 class _FilterField(ChinoBaseObject):
 
-    def __init__(self, field, value, type='eq', case_sensitive=False):
+    def __init__(self, field, value, type='eq', case_sensitive=False, **kwargs):
         self.field = field
         self.type = type
         self.case_sensitive = case_sensitive
@@ -589,7 +589,7 @@ class _FilterField(ChinoBaseObject):
 
 class Search(ChinoBaseObject):
 
-    def __init__(self, schema_id, result_type, sort=None, filters=None):
+    def __init__(self, schema_id, result_type, sort=None, filters=None, **kwargs):
         self.schema_id = schema_id
         self.result_type = result_type
         self.sort = []

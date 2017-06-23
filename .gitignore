@@ -84,3 +84,11 @@ cfg0.py
 test/tests_chino_data.py
 test/tests_paolo.py
 test/cover
+test/create_blob.py
+test/g_blobs.py
+test/read_blob.py
+kube.env
+local.env
+logo.png
+test.env.bup
+test.file
