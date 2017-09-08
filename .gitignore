@@ -92,3 +92,4 @@ local.env
 logo.png
 test.env.bup
 test.file
+*.env

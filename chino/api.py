@@ -3,6 +3,9 @@ from __future__ import division
 from __future__ import print_function
 
 # -*- coding: utf-8 -*-
+
+from datetime import timedelta, datetime
+
 """
 Chino.io API Client Docs
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -203,6 +206,7 @@ class ChinoAPIUsers(ChinoAPIBase):
             result = self.apicall('POST', url, form=pars)
             self.auth.refresh_token = result['refresh_token']
             self.auth.bearer_token = result['access_token']
+            self.auth.bearer_exp = datetime.now() + timedelta(seconds=int(result['expires_in']))
             self.auth.set_auth_user()
             return result
         except Exception as ex:
@@ -667,9 +671,12 @@ class ChinoAuth(object):
     client_id = None
     client_secret = None
     bearer_token = None
+    refresh_token = None
+    bearer_exp = None
     __auth = None
 
-    def __init__(self, customer_id, customer_key=None, bearer_token=None, client_id=None, client_secret=None):
+    def __init__(self, customer_id, customer_key=None, bearer_token=None, client_id=None, client_secret=None,
+                 refresh_token=None, bearer_exp=None):
         """
         Init the class
 
@@ -683,6 +690,8 @@ class ChinoAuth(object):
         self.bearer_token = bearer_token
         self.client_id = client_id
         self.client_secret = client_secret
+        self.refresh_token = refresh_token
+        self.bearer_exp = bearer_exp
         if customer_key:
             # if customer_key is set, then set auth as that
             self.set_auth_admin()
