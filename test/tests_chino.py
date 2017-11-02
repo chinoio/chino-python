@@ -724,6 +724,8 @@ class SearchDocsChinoTest(BaseChinoTest):
         time.sleep(10)
         res = self.chino.searches.documents(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
         self.assertEqual(res.paging.total_count, 9, res)
+        res = self.chino.searches.documents_complex(self.schema, query={"field": "fieldInt", "type": "eq", "value": 123})
+        self.assertEqual(res.paging.total_count, 9, res)
         # print res.documents
         ids = []
         for d in res.documents[:3]:

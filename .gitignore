@@ -93,3 +93,6 @@ logo.png
 test.env.bup
 test.file
 *.env
+answer.xlsx
+check_migration_are_ok.py
+outanswer.xlsx
