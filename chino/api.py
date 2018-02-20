@@ -23,7 +23,7 @@ from requests.auth import HTTPBasicAuth, AuthBase
 
 from .exceptions import MethodNotSupported, CallError, CallFail, ClientError
 from .objects import Repository, ListResult, User, Group, Schema, Document, Blob, BlobDetail, UserSchema, \
-    Collection, Permission, IDs, Application
+    Collection, Permission, IDs, Application, Consent
 
 import logging.config
 
@@ -458,7 +458,7 @@ class ChinoAPISchemas(ChinoAPIBase):
 
     def list(self, repository_id, **pars):
         """
-        Gets the list of docuemnts by schema
+        Gets the list of documents by schema
 
         :param repository_id: (id) the id of the repository
         :param: usual for a list ``offset``, ``limit``
@@ -911,6 +911,40 @@ class ChinoAPIApplication(ChinoAPIBase):
             params['force'] = 'true'
 
         return self.apicall('DELETE', url, params)
+
+
+class ChinoAPIConsents(ChinoAPIBase):
+    def __init__(self, auth, url, timeout, session=True):
+        super(ChinoAPIConsents, self).__init__(auth, url, timeout, session)
+
+    def list(self, **pars):
+        """
+        Gets the list of all available consents for every user.
+        :param pars: dict with fields ``offset``, ``limit`` to navigate through paged results of a list
+        :return: dict containing ``count``,``total_count``,``limit``,``offset``,``repositories``
+        """
+        url = "consents"
+        return ListResult(Consent, self.apicall("GET", url, params=pars))
+
+    def create(self, user_id, details, data_controller, purposes):
+        """
+        Creates and returns a new Consent object.
+
+        :param user_id: string that identifies uniquely a user.
+                    Can be a chino.objects.User user_id attribute or any other valid string
+                    (i.e. an email address)
+        :param details: a dict that contains all the following fields: ``description``, ``policy_url``, ``policy_version`` and ``collection_mode``
+        :params data_controller: a dict that must contain all the following fields: ``company``, ``contact``, ``address``, ``email``, ``VAT`` and ``on_behalf``
+        :params purposes: a list that contains one or more dicts. The dicts must contain all the following fields: ``authorized``, ``purpose`` and ``description``
+        :return: the created Consent object
+        """
+        consent_obj = dict(details)
+        consent_obj['data_controller'] = data_controller
+        consent_obj['purposes'] = purposes
+
+        url = "consents"
+
+        return Consent(**self.apicall("POST", url, data=consent_obj)['consent'])
 
 
 class ChinoAPIClient(object):

@@ -691,7 +691,7 @@ class Consent(ChinoBaseObject):
 
         self.policy_url = policy_url
         self.policy_version = policy_version
-        self.withdrawn_date = withdrawn_date    # is always 'None' when a new instance is created
+        self.withdrawn_date = withdrawn_date    # should be always 'None' when a new instance is created
         self.inserted_date = inserted_date
         self.collection_mode = collection_mode
 
