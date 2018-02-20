@@ -676,11 +676,11 @@ class Consent(ChinoBaseObject):
 
 
     def __init__(self, consent_id=None, user_id=None, description=None, data_controller=None, purposes=None,
-                        policy_url=None, policy_version=None, collection_mode=None, insert_date=None):
-        self.consent_id = consent_id
+                        policy_url=None, policy_version=None, collection_mode=None, inserted_date=None, withdrawn_date=None):
         self.user_id = user_id
         self.description = description
         self.data_controller = _DictContent(**data_controller) if data_controller else None
+        self.consent_id = consent_id
         # 'purposes' is a list of dict-s
         if purposes:
             self.purposes = []
@@ -691,9 +691,9 @@ class Consent(ChinoBaseObject):
 
         self.policy_url = policy_url
         self.policy_version = policy_version
+        self.withdrawn_date = withdrawn_date    # is always 'None' when a new instance is created
+        self.inserted_date = inserted_date
         self.collection_mode = collection_mode
-        self.insert_date = insert_date
-        self.withdrawn_date = None
 
 
 
