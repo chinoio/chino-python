@@ -917,14 +917,19 @@ class ChinoAPIConsents(ChinoAPIBase):
     def __init__(self, auth, url, timeout, session=True):
         super(ChinoAPIConsents, self).__init__(auth, url, timeout, session)
 
-    def list(self, **pars):
+    def list(self, user_id=None, **pars):
         """
-        Gets the list of all available consents for every user.
-        :param pars: dict with fields ``offset``, ``limit`` to navigate through paged results of a list
+        Gets the list of all available consents.
+
+        :param user_id: if specified, filters results by user
+        :param pars: dict with fields ``offset``, ``limit`` (to navigate through paged results of a list)
         :return: dict containing ``count``,``total_count``,``limit``,``offset``,``repositories``
         """
         url = "consents"
-        return ListResult(Consent, self.apicall("GET", url, params=pars))
+        url_params = dict(pars)
+        if user_id:
+            url_params['user_id'] = user_id
+        return ListResult(Consent, self.apicall("GET", url, params=url_params))
 
     def create(self, user_id, details, data_controller, purposes):
         """
@@ -949,12 +954,49 @@ class ChinoAPIConsents(ChinoAPIBase):
     def detail(self, consent_id):
         """
         Gets the Consent object with the specified ID
+
         :param consent_id: the Chino.io API id of this consent object
         :return: a Consent object with the specified consent_id
         """
         url = "consent/%s" % consent_id
         return Consent(**self.apicall("GET", url=url)['consent'])
 
+    def history(self, consent_id, **pars):
+        """
+        Get an history of the Consent object with the provided ID
+
+        :param consent_id: the Chino.io API id of this consent object
+        :param pars: dict with fields ``offset``, ``limit`` to navigate through paged results of a list
+        :return: a ListResult with the history of the Consent object with the specified consent_id
+        """
+        url = "consents/%s/history" % consent_id
+        return ListResult(Consent, self.apicall("GET", url, params=pars))
+
+    def update(self, consent_id, user_id, details, data_controller, purposes):
+        """
+        Creates a new Consent with the specified informations and withdraws the old one
+        which has the same ID.
+
+        :param consent_id: the Chino.io API id of this consent object
+        :param user_id: string that identifies the user.
+        :param details: a dict that contains all the following fields: ``description``, ``policy_url``, ``policy_version`` and ``collection_mode``
+        :params data_controller: a dict that must contain all the following fields: ``company``, ``contact``, ``address``, ``email``, ``VAT`` and ``on_behalf``
+        :params purposes: a list that contains one or more dicts. The dicts must contain all the following fields: ``authorized``, ``purpose`` and ``description``
+        :return: the created Consent object
+        """
+        url = "consents/%s" % consent_id
+        return Consent(**self.apicall("PUT", url=url)['consent'])
+
+    def withdraw(self, consent_id):
+        """
+        Withdraws the Consent which has the specified ID. Withdrawn consents can not be further updated,
+        but remain in the database for further reference.
+
+        :params consent_id: the Chino.io API id of this consent object
+        :return: the object that is returned by the API call.
+        """
+        url = "consents/%s" % consent_id
+        return self.apicall('DELETE', url)
 
 
 class ChinoAPIClient(object):
