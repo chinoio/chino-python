@@ -946,6 +946,16 @@ class ChinoAPIConsents(ChinoAPIBase):
 
         return Consent(**self.apicall("POST", url, data=consent_obj)['consent'])
 
+    def detail(self, consent_id):
+        """
+        Gets the Consent object with the specified ID
+        :param consent_id: the Chino.io API id of this consent object
+        :return: a Consent object with the specified consent_id
+        """
+        url = "consent/%s" % consent_id
+        return Consent(**self.apicall("GET", url=url)['consent'])
+
+
 
 class ChinoAPIClient(object):
     """
