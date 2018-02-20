@@ -615,6 +615,88 @@ class Search(ChinoBaseObject):
             res['filters'] = [f.to_dict() for f in self.filters]
         return res
 
+class Consent(ChinoBaseObject):
+    """
+
+    Example:
+
+            consent : {
+              "message": null,
+              "data": {
+                "count": 2,
+                "total_count": 2,
+                "consents": [
+                  {
+                    "user_id": "admin@chino.io",
+                    "description": "a long textual description",
+                    "data_controller": {
+                      "company": "Acme",
+                      "contact": "John Doe",
+                      "address": "221B Baker St.",
+                      "email": "info@acme.com",
+                      "VAT": "IT03256920228",
+                      "on_behalf": true
+                    },
+                    "consent_id": "0a63b938-c481-42aa-8da2-1db34f2d0dea",
+                    "purposes": [
+                      {
+                        "authorized": true,
+                        "purpose": "marketing",
+                        "description": "mailing list"
+                      }
+                    ],
+                    "policy_url": "https://chino.io/legal/privacy-policy",
+                    "policy_version": "v1.0",
+                    "withdrawn_date": null,
+                    "inserted_date": "2018-01-26T13:16:28.680Z",
+                    "collection_mode": "webform"
+                  }
+                ],
+                "limit": 10,
+                "offset": 0
+              },
+              "result": "success",
+              "result_code": 200
+            }
+
+    """
+    __str_name__ = 'consent'
+    __str_names__ ='consents'
+
+    @property
+    def _id(self):
+        return self.consent_id
+
+    def to_dict(self):
+        res = super(Consent, self).to_dict()
+        if self.data_controller:
+            res['data_controller'] = self.data_controller.to_dict()
+        if self.purposes:
+            res['purposes'] = [purpose.to_dict() for purpose in self.purposes]
+
+
+    def __init__(self, consent_id=None, user_id=None, description=None, data_controller=None, purposes=None,
+                        policy_url=None, policy_version=None, collection_mode=None, insert_date=None):
+        self.consent_id = consent_id
+        self.user_id = user_id
+        self.description = description
+        self.data_controller = _DictContent(**data_controller) if data_controller else None
+        # 'purposes' is a list of dict-s
+        if purposes:
+            self.purposes = []
+            for p in purposes:
+                self.purposes.append(_DictContent(**p))
+        else:
+            self.purposes = None
+
+        self.policy_url = policy_url
+        self.policy_version = policy_version
+        self.collection_mode = collection_mode
+        self.insert_date = insert_date
+        self.withdrawn_date = None
+
+
+
 
 _PermissionProperty = namedtuple(
     '_PermissionProperty', ['read', 'delete', 'update'])
