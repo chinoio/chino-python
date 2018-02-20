@@ -695,7 +695,13 @@ class Consent(ChinoBaseObject):
         self.inserted_date = inserted_date
         self.collection_mode = collection_mode
 
+    def is_withdrawn(self):
+        """
+        Check if this Consent has been withdrawn.
 
+        :return: True if the 'withdrawn_date' attribute of this instance has been set, otherwise False
+        """
+        return (self.withdrawn_date != None)
 
 
 _PermissionProperty = namedtuple(
