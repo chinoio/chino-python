@@ -908,26 +908,43 @@ class ConsentChinoTest(BaseChinoTest):
 
     def setUp(self):
         super(ConsentChinoTest, self).setUp()
-        consent_ls = self.chino.consents.list().to_dict()['consents']
-        if not len(consent_ls) > 0:
-            self._load()
-            consent_ls = self.chino.consents.list().to_dict()['consents']
-        assertTrue(len(consent_ls) > 0, msg="Test set up failed: could not create test Consents.")
+        self.DETAILS = {
+            "description": "This policy was created for test purposes. The policy url is linked to Chino.io policy.",
+            "policy_url": "https://www.chino.io/legal/privacy-policy",
+            "policy_version": "test",
+            "collection_mode": "none"
+        }
+        self.DATA_CONTROLLER = {
+          "company" : "Chino.io",
+          "contact" : "controller",
+          "address" : "Via S.G. Bosco 27, 38068 Rovereto",
+          "email" : "controller@mail.tld",
+          "VAT" : "n/d",
+          "on_behalf" : true
+        }
+        self.PURPOSES = [
+          {
+              "authorized": true,
+              "purpose": "testing",
+              "description" : "Testing class api.ChinoAPIConsents"
+          },
+          {
+              "authorized": false,
+              "purpose": "testing",
+              "description" : "Testing class objects.Consent"
+          }
+        ]
+        self.consent_ls = self.chino.consents.create("user_id", self.DETAILS, self.DATA_CONTROLLER, self.PURPOSES)
+        self.consent_ls = self.chino.consents.create("another-user_id", self.DETAILS, self.DATA_CONTROLLER, self.PURPOSES)
 
-        # keeping track of the Consents from 'test\consent_data.py'
-        self._test_consent_ids = []
-        for consent in consent_ls:
-            if consent['policy_version'] == "test":
-                self._test_consent_ids.append(consent['consent_id'])
 
-
-    def _load(self):
-        from . import consent_data
-        for c in consent_data.consent_list:
-            details = dict()
-            for attribute in ['description', 'policy_url', 'policy_version', 'collection_mode']:
-                details[attribute] = c[attribute]
-            self.chino.consents.create(c['user_id'], details, c['data_controller'], c['purposes'])
+    def tearDown(self):
+        list = self.chino.consents.list()
+        for c in list.consents:
+            if c.to_dict()['policy_version'] == 'test':
+                self.chino.consents.delete(c._id)
+        if list.paging.count > 0:
+            self.logger.debug("Not all the Consents have been deleted. If this is unexpected, please do it manually")
 
 
     def test_list(self):
@@ -935,20 +952,47 @@ class ConsentChinoTest(BaseChinoTest):
         self.assertIsNotNone(list.paging)
         self.assertIsNotNone(list.consents)
 
+
     def test_CRUD(self):
-        # CREATE: unavailable until server-side delete is implemented
+        USER_ID1 = "username@mail.tld"
+        USER_ID2 = "another_username@mail.tld"
+        # CREATE
+        new = self.chino.consents.create(USER_ID1, self.DETAILS, self.DATA_CONTROLLER, self.PURPOSES)
+        list = self.chino.consents.list()
+        self.assertGreater(list.paging.count, 0)
+        read_id = 0
+        for consent in list:
+            if consent._id == new._id:
+                read_id = consent._id
+        self.assertFalse(read_id == 0)
+        # READ
+        read = self.chino.consents.detail(read_id)
+        read_compare = self.chino.consents.detail(new._id)
+        self.assertTrue(self._equals(new.to_dict(), read.to_dict()),
+            msg="created:\n%s\n\nread:\n\n%s\n" % (new.to_json(), read.to_json())
+        )
+        # UPDATE
+        updated = self.chino.consents.update(read._id, USER_ID2, DETAILS, DATA_CONTROLLER, PURPOSES)
+        self.assertFalse(self._equals(new.to_dict(), read.to_dict()),
+            msg="update returned an unmodified object.")
+
+        read = self.chino.consents.detail(read_id)
+        self.assertTrue(self._equals(updated.to_dict(), read.to_dict()),
+            msg="updated:\n%s\n\nread:\n\n%s\n" % (updated.to_json(), read.to_json())
+        )
+        history = self.chino.consents.history(read._id)
+        self.assertGreater(len(history.consents), 1)
+        # DELETE
+        self.chino.consents.delete(read._id)
+        for cid in [new._id, read._id, updated._id]
+        self.assertRaises(excClass=CallError,
+            callableObj=self.chino.consents.detail,
+            {'consent_id':cid}
+        )
+
+
+    def test_withdraw(self):
         return
-
-    def test_withdraw(self):     # temporarily disabled - Consent deletion and tearDown function need to be implemented first
-        return
-
-    def tearDown(self):
-        return
-        # # delete Consents here - API to be implemented
-        for cid in self._test_consent_ids:
-            self.chino.consents.delete(cid)
-
-
 
 
 
