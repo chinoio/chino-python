@@ -1000,6 +1000,9 @@ class ChinoAPIConsents(ChinoAPIBase):
         url = "consents/%s" % consent_id
         return self.apicall('DELETE', url)
 
+    def delete(self, consent_id):
+        raise NotImplementedError("This function will be released in a future update")
+
 
 class ChinoAPIClient(object):
     """
