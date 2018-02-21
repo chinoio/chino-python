@@ -958,7 +958,7 @@ class ChinoAPIConsents(ChinoAPIBase):
         :param consent_id: the Chino.io API id of this consent object
         :return: a Consent object with the specified consent_id
         """
-        url = "consent/%s" % consent_id
+        url = "consents/%s" % consent_id
         return Consent(**self.apicall("GET", url=url)['consent'])
 
     def history(self, consent_id, **pars):
