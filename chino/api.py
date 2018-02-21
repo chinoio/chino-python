@@ -944,6 +944,7 @@ class ChinoAPIConsents(ChinoAPIBase):
         :return: the created Consent object
         """
         consent_obj = dict(details)
+        consent_obj['user_id'] = user_id
         consent_obj['data_controller'] = data_controller
         consent_obj['purposes'] = purposes
 
