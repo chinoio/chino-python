@@ -930,17 +930,18 @@ class ConsentChinoTest(BaseChinoTest):
 
 
     def test_list(self):
-        pass
+        list = self.chino.consents.list()
+        self.assertIsNotNone(list.paging)
+        self.assertIsNotNone(list.consents)
 
     def test_CRUD(self):
+        return
 
-        pass
-
-    def withdraw(self):     # temporarily disabled - Consent deletion and tearDown function need to be implemented first
-        pass
+    def test_withdraw(self):     # temporarily disabled - Consent deletion and tearDown function need to be implemented first
+        return
 
     def tearDown(self):
-        pass
+        return
         # # delete Consents here - API to be implemented
         for cid in self._consent_ids:
             self.chino.consents.delete(cid)
