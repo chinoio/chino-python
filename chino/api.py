@@ -1001,7 +1001,8 @@ class ChinoAPIConsents(ChinoAPIBase):
         return self.apicall('DELETE', url)
 
     def delete(self, consent_id):
-        raise NotImplementedError("This function will be released in a future update")
+            url = "consents/%s" % consent_id
+            return self.apicall("DELETE", url, params={'force': 'true'})
 
 
 class ChinoAPIClient(object):
