@@ -930,7 +930,6 @@ class ChinoAPIConsents(ChinoAPIBase):
         if user_id:
             url_params['user_id'] = user_id
         return ListResult(Consent, self.apicall("GET", url, params=url_params))
-        # return ListResult(Application, self.apicall('GET', url, params=pars))
 
     def create(self, user_id, details, data_controller, purposes):
         """
@@ -986,8 +985,13 @@ class ChinoAPIConsents(ChinoAPIBase):
         :params purposes: a list that contains one or more dicts. The dicts must contain all the following fields: ``authorized``, ``purpose`` and ``description``
         :return: the created Consent object
         """
+        updated_consent = dict(details)
+        updated_consent['user_id'] = user_id
+        updated_consent['data_controller'] = data_controller
+        updated_consent['purposes'] = purposes
+
         url = "consents/%s" % consent_id
-        return Consent(**self.apicall("PUT", url=url)['consent'])
+        return Consent(**self.apicall("PUT", data=updated_consent, url=url)['consent'])
 
     def withdraw(self, consent_id):
         """
@@ -1001,8 +1005,11 @@ class ChinoAPIConsents(ChinoAPIBase):
         return self.apicall('DELETE', url)
 
     def delete(self, consent_id):
-            url = "consents/%s" % consent_id
-            return self.apicall("DELETE", url, params={'force': 'true'})
+        """
+        only works with test API. Deletes Consent from server
+        """
+        url = "consents/%s" % consent_id
+        return self.apicall("DELETE", url, params={'force': 'true'})
 
 
 class ChinoAPIClient(object):
