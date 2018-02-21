@@ -904,5 +904,20 @@ class PermissionChinoTest(BaseChinoTest):
         self.assertEqual(self.chino_user0.documents.list(self.schema).paging.total_count, 1)
 
 
+class ConsentChinoTest(BaseChinoTest):
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def test_list(self):
+        pass
+
+    def test_CRUD(self):
+        pass
+
+
+
 if __name__ == '__main__':
     unittest.main()
