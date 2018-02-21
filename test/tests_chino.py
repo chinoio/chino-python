@@ -934,12 +934,18 @@ class ConsentChinoTest(BaseChinoTest):
               "description" : "Testing class objects.Consent"
           }
         ]
-        self.consent_ls = self.chino.consents.create("user_id", self.DETAILS, self.DATA_CONTROLLER, self.PURPOSES)
-        self.consent_ls = self.chino.consents.create("another-user_id", self.DETAILS, self.DATA_CONTROLLER, self.PURPOSES)
+        self.USER_ID = "user_id"
+        self.USER_ID_ALT = "another-user_id"
+        self.consent_ls = []
+        self.consent_ls.append (self.chino.consents.create(self.USER_ID, self.DETAILS, self.DATA_CONTROLLER, self.PURPOSES))
+        self.consent_ls.append (self.chino.consents.create(self.USER_ID_ALT, self.DETAILS, self.DATA_CONTROLLER, self.PURPOSES))
+        self.consent_ls.append (self.chino.consents.create(self.USER_ID, self.DETAILS, self.DATA_CONTROLLER, self.PURPOSES))
 
 
     def tearDown(self):
         list = self.chino.consents.list()
+        for c in self.consent_ls:
+            self.chino.consents.delete(c._id)
         for c in list.consents:
             if c.to_dict()['policy_version'] == 'test':
                 self.chino.consents.delete(c._id)
@@ -951,6 +957,10 @@ class ConsentChinoTest(BaseChinoTest):
         list = self.chino.consents.list()
         self.assertIsNotNone(list.paging)
         self.assertIsNotNone(list.consents)
+
+        list = self.chino.consents.list(self.USER_ID)
+        for consent in list.consents:
+            self.assertEqual(user_id=consent.to_dict()['user_id'], self.USER_ID)
 
 
     def test_CRUD(self):
@@ -992,8 +1002,11 @@ class ConsentChinoTest(BaseChinoTest):
 
 
     def test_withdraw(self):
-        return
+        withdraw = self.chino.consents.list(user_id=self.USER_ID_ALT).consents[0]
+        self.chino.consents.withdraw(withdraw._id)
 
+        read = self.chino.consents.detail(withdraw._id)
+        self.assertIsNotNone(read.to_dict['withdrawn_date'])
 
 
 
