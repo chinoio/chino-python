@@ -921,7 +921,7 @@ class ChinoAPIConsents(ChinoAPIBase):
         """
         Gets the list of all available consents.
 
-        :param user_id: if specified, filters results by user
+        :param user_id: optional. If specified, results are filtered by user
         :param pars: dict with fields ``offset``, ``limit`` (to navigate through paged results of a list)
         :return: dict containing ``count``,``total_count``,``limit``,``offset``,``repositories``
         """
@@ -930,6 +930,7 @@ class ChinoAPIConsents(ChinoAPIBase):
         if user_id:
             url_params['user_id'] = user_id
         return ListResult(Consent, self.apicall("GET", url, params=url_params))
+        # return ListResult(Application, self.apicall('GET', url, params=pars))
 
     def create(self, user_id, details, data_controller, purposes):
         """

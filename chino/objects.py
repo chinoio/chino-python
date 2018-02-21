@@ -674,6 +674,8 @@ class Consent(ChinoBaseObject):
         if self.purposes:
             res['purposes'] = [purpose.to_dict() for purpose in self.purposes]
 
+        return res
+
 
     def __init__(self, consent_id=None, user_id=None, description=None, data_controller=None, purposes=None,
                         policy_url=None, policy_version=None, collection_mode=None, inserted_date=None, withdrawn_date=None):
