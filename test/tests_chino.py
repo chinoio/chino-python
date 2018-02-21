@@ -905,17 +905,48 @@ class PermissionChinoTest(BaseChinoTest):
 
 
 class ConsentChinoTest(BaseChinoTest):
-    def setUp(self):
-        pass
 
-    def tearDown(self):
-        pass
+    def setUp(self):
+        super(ConsentChinoTest, self).setUp()
+        consent_ls = self.chino.consents.list().to_dict()['consents']
+        if not len(consent_ls) > 0:
+            self._load()
+            consent_ls = self.chino.consents.list().to_dict()['consents']
+        assertTrue(len(consent_ls) > 0, msg="Test set up failed: could not create test Consents.")
+
+        # keeping track of the Consents which have been created only for test purposes
+        self._consent_ids = []
+        for consent in consent_ls:
+            self._consent_ids.append(consent['consent_id'])
+
+
+    def _load(self):
+        from . import consent_data
+        for c in consent_data.consent_list:
+            details = dict()
+            for attribute in ['description', 'policy_url', 'policy_version', 'collection_mode']:
+                details[attribute] = c[attribute]
+            self.chino.consents.create(c['user_id'], details, c['data_controller'], c['purposes'])
+
 
     def test_list(self):
         pass
 
     def test_CRUD(self):
+
         pass
+
+    def withdraw(self):     # temporarily disabled - Consent deletion and tearDown function need to be implemented first
+        pass
+
+    def tearDown(self):
+        pass
+        # # delete Consents here - API to be implemented
+        for cid in self._consent_ids:
+            self.chino.consents.delete(cid)
+
+
+
 
 
 
