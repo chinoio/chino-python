@@ -1051,3 +1051,5 @@ class ChinoAPIClient(object):
             auth, final_url, timeout=timeout, session=session)
         self.searches = ChinoAPISearches(
             auth, final_url, timeout=timeout, session=session)
+        self.consents = ChinoAPIConsents(
+            auth, final_url, timeout=timeout, session=session)
