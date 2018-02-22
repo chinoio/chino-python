@@ -159,6 +159,16 @@ Class to manage the user, `chino.users`
 - `rm_document`
 - `search`
 
+### Consents
+`chino.consents`
+
+- `list`
+- `create`
+- `detail`
+- `history`
+- `update`
+- `withdraw`
+- `delete` (only available for test API)
 
 ### OTHER
 *Plus methods that are utils for auth and to manage communications*
