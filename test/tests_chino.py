@@ -908,70 +908,67 @@ class ConsentChinoTest(BaseChinoTest):
 
     def setUp(self):
         super(ConsentChinoTest, self).setUp()
-        self.DETAILS = {
+        self.details = {
             "description": "This policy was created for test purposes. The policy url is linked to Chino.io policy.",
             "policy_url": "https://www.chino.io/legal/privacy-policy",
             "policy_version": "test",
             "collection_mode": "none"
         }
-        self.DATA_CONTROLLER = {
+        self.data_controller = {
           "company" : "Chino.io",
           "contact" : "controller",
           "address" : "Via S.G. Bosco 27, 38068 Rovereto",
           "email" : "controller@mail.tld",
           "VAT" : "n/d",
-          "on_behalf" : true
+          "on_behalf" : True
         }
-        self.PURPOSES = [
+        self.purposes = [
           {
-              "authorized": true,
+              "authorized": True,
               "purpose": "testing",
               "description" : "Testing class api.ChinoAPIConsents"
           },
           {
-              "authorized": false,
+              "authorized": False,
               "purpose": "testing",
               "description" : "Testing class objects.Consent"
           }
         ]
-        self.USER_ID = "user_id"
-        self.USER_ID_ALT = "another-user_id"
+        self.user_id = "user_id"
+        self.user_id_alt = "another-user_id"
+        # list of Consents for test_list and test_withdraw
         self.consent_ls = []
-        self.consent_ls.append (self.chino.consents.create(self.USER_ID, self.DETAILS, self.DATA_CONTROLLER, self.PURPOSES))
-        self.consent_ls.append (self.chino.consents.create(self.USER_ID_ALT, self.DETAILS, self.DATA_CONTROLLER, self.PURPOSES))
-        self.consent_ls.append (self.chino.consents.create(self.USER_ID, self.DETAILS, self.DATA_CONTROLLER, self.PURPOSES))
+        self.consent_ls.append(self.chino.consents.create(self.user_id, self.details, self.data_controller, self.purposes))
+        self.consent_ls.append(self.chino.consents.create(self.user_id_alt, self.details, self.data_controller, self.purposes))
+        self.consent_ls.append(self.chino.consents.create(self.user_id, self.details, self.data_controller, self.purposes))
 
 
     def tearDown(self):
-        list = self.chino.consents.list()
-        for c in self.consent_ls:
-            self.chino.consents.delete(c._id)
-        for c in list.consents:
+        ls = self.chino.consents.list()
+        for c in ls.consents:
             if c.to_dict()['policy_version'] == 'test':
                 self.chino.consents.delete(c._id)
-        if list.paging.count > 0:
-            self.logger.debug("Not all the Consents have been deleted. If this is unexpected, please do it manually")
 
 
     def test_list(self):
-        list = self.chino.consents.list()
-        self.assertIsNotNone(list.paging)
-        self.assertIsNotNone(list.consents)
+        ls = self.chino.consents.list()
+        self.assertIsNotNone(ls.paging)
+        self.assertIsNotNone(ls.consents)
 
-        list = self.chino.consents.list(self.USER_ID)
-        for consent in list.consents:
-            self.assertEqual(user_id=consent.to_dict()['user_id'], self.USER_ID)
+        ls = self.chino.consents.list(self.user_id)
+        for consent in ls.consents:
+            self.assertEqual(consent.to_dict()['user_id'], self.user_id)
 
 
     def test_CRUD(self):
         USER_ID1 = "username@mail.tld"
         USER_ID2 = "another_username@mail.tld"
         # CREATE
-        new = self.chino.consents.create(USER_ID1, self.DETAILS, self.DATA_CONTROLLER, self.PURPOSES)
+        new = self.chino.consents.create(USER_ID1, self.details, self.data_controller, self.purposes)
         list = self.chino.consents.list()
         self.assertGreater(list.paging.count, 0)
         read_id = 0
-        for consent in list:
+        for consent in list.consents:
             if consent._id == new._id:
                 read_id = consent._id
         self.assertFalse(read_id == 0)
@@ -982,9 +979,9 @@ class ConsentChinoTest(BaseChinoTest):
             msg="created:\n%s\n\nread:\n\n%s\n" % (new.to_json(), read.to_json())
         )
         # UPDATE
-        updated = self.chino.consents.update(read._id, USER_ID2, DETAILS, DATA_CONTROLLER, PURPOSES)
-        self.assertFalse(self._equals(new.to_dict(), read.to_dict()),
-            msg="update returned an unmodified object.")
+        updated = self.chino.consents.update(read._id, USER_ID2, self.details, self.data_controller, self.purposes)
+        self.assertFalse(self._equals(new.to_dict(), updated.to_dict()),
+            msg=("Update returned an unmodified object.\nid1: %s\nid2: %s" % (new._id, updated._id)))
 
         read = self.chino.consents.detail(read_id)
         self.assertTrue(self._equals(updated.to_dict(), read.to_dict()),
@@ -994,19 +991,19 @@ class ConsentChinoTest(BaseChinoTest):
         self.assertGreater(len(history.consents), 1)
         # DELETE
         self.chino.consents.delete(read._id)
-        for cid in [new._id, read._id, updated._id]
-        self.assertRaises(excClass=CallError,
-            callableObj=self.chino.consents.detail,
-            {'consent_id':cid}
-        )
+        for cid in [new._id, read._id, updated._id]:
+            self.assertRaises(CallError,
+                self.chino.consents.detail,
+                {'consent_id':cid}
+            )
 
 
     def test_withdraw(self):
-        withdraw = self.chino.consents.list(user_id=self.USER_ID_ALT).consents[0]
+        withdraw = self.chino.consents.list(user_id=self.user_id_alt).consents[0]
         self.chino.consents.withdraw(withdraw._id)
 
         read = self.chino.consents.detail(withdraw._id)
-        self.assertIsNotNone(read.to_dict['withdrawn_date'])
+        self.assertIsNotNone(read.to_dict()['withdrawn_date'])
 
 
 
