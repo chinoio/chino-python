@@ -96,3 +96,5 @@ test.file
 answer.xlsx
 check_migration_are_ok.py
 outanswer.xlsx
+test/chino_data_input.py
+test/permission_created.py

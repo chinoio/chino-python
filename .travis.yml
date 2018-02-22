@@ -1,7 +1,8 @@
 language: python
 branches:
-  only:
-  - master
+    only:
+    - master
+    - /\d+\.*\d*\.*\d*\w*/
 python:
 - '2.7'
 - '3.6'
