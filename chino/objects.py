@@ -288,7 +288,7 @@ class Document(ChinoBaseObject):
 
 class _Field(ChinoBaseObject):
 
-    def __init__(self, type, name, indexed=None):
+    def __init__(self, type, name, indexed=None, **kwargs):
         self.type = type
         self.name = name
         if indexed:

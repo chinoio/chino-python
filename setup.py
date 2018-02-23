@@ -17,7 +17,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 
 setup(name='chino',
-      version='1.0.8',
+      version='1.0.9',
       description='Wrapper for Chino.io API',
       long_description=long_description,
       author='Stefano Tranquillini',
