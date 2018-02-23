@@ -4,7 +4,7 @@ from __future__ import print_function
 import json
 from collections import namedtuple
 
-__author__ = 'Stefano Tranquillini <stefano.tranquillini@gmail.com>'
+__author__ = 'Stefano Tranquillini <stefano@chino.io>'
 import logging
 logger = logging.getLogger('chino')
 
