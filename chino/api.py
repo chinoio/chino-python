@@ -878,15 +878,17 @@ class ChinoAPIApplication(ChinoAPIBase):
         url = "auth/applications"
         return ListResult(Application, self.apicall('GET', url, params=pars))
 
-    def create(self, name, grant_type='password', redirect_url=''):
+    def create(self, name, grant_type='password', redirect_url='', client_type='confidential'):
         """
-        Creates a Application
+        Creates a Application.
+        Note: optional parameter client_type can be either 'public' or 'confidential'.
+        "confidential" is the default value.
 
         :param name: (str) the name of the Application
         :return: (dict) the Application.
         """
         data = dict(name=name, grant_type=grant_type,
-                    redirect_url=redirect_url)
+                    redirect_url=redirect_url, client_type=client_type)
         url = "auth/applications"
         return Application(**self.apicall('POST', url, data=data)[Application.__str_name__])
 
