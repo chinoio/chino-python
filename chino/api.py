@@ -199,8 +199,9 @@ class ChinoAPIUsers(ChinoAPIBase):
         auth = self.auth
         # self.auth = None
         url = "auth/token/"
-        pars = dict(username=username, password=password,
+        pars = dict(username=username, password=password, client_id=self.auth.client_id, client_secret=self.auth.client_secret,
                     grant_type='password')
+
         try:
             self.auth.set_auth_application()
             result = self.apicall('POST', url, form=pars)
@@ -222,6 +223,7 @@ class ChinoAPIUsers(ChinoAPIBase):
         url = "auth/token/"
         pars = dict(grant_type='refresh_token', client_id=self.auth.client_id, client_secret=self.auth.client_secret,
                     refresh_token=self.auth.refresh_token)
+
         try:
             self.auth.set_auth_null()
             result = self.apicall('POST', url, form=pars)
@@ -708,13 +710,14 @@ class ChinoAuth(object):
         self.client_secret = client_secret
         self.refresh_token = refresh_token
         self.bearer_exp = bearer_exp
+
         if customer_key:
             # if customer_key is set, then set auth as that
             self.set_auth_admin()
         elif bearer_token:
             # if access_token is set, then use it as customer
             self.set_auth_user()
-        elif client_id and client_secret:
+        elif client_id:
             self.set_auth_application()
 
     def set_auth_admin(self):
@@ -727,7 +730,11 @@ class ChinoAuth(object):
         self.__auth = None
 
     def set_auth_application(self):
-        self.__auth = HTTPBasicAuth(self.client_id, self.client_secret)
+        """client credentials are always sent in the body"""
+        if self.client_secret:
+            self.__auth = HTTPBasicAuth(self.client_id, self.client_secret)
+        else:
+            self.set_auth_null()
 
     def get_auth(self):
         return self.__auth

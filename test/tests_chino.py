@@ -81,6 +81,7 @@ class UserChinoTest(BaseChinoTest):
         fields = [dict(name='first_name', type='string'), dict(name='last_name', type='string'),
                   dict(name='email', type='string')]
         self.us = self.chino.user_schemas.create('test', fields)
+        self.app_list = []
 
     def tearDown(self):
         # if user has been created we remove it.
@@ -92,6 +93,10 @@ class UserChinoTest(BaseChinoTest):
         self.chino.user_schemas.delete(self.us._id, force=True)
         if hasattr(self, 'app'):
             self.chino.applications.delete(self.app._id)
+
+        # delete also every Application which was created forthis test
+        for app in self.chino.applications.list().to_dict()['applications']:
+            self.chino.applications.delete(app['app_id'], force=True)
 
     def test_list(self):
         list = self.chino.users.list(self.us._id)
@@ -155,7 +160,39 @@ class UserChinoTest(BaseChinoTest):
         self.assertEqual(ste_2.username, EDIT)
 
         self.chino_user.users.refresh()
-        # now should be impossible to create the user
+        # it should be impossible to create the user after login with self.chino_user (no admin access)
+        self.assertRaises(CallError, self.chino_user.users.create, self.us._id, username='error', password='12345678',
+                          attributes=dict(first_name='john', last_name='doe',
+                                          email='test@chino.io'))
+
+        self.chino_user.users.logout()
+        self.assertRaises(Exception, self.chino_user.users.login, EDIT, '')
+
+        self.assertRaises(CallError, self.chino.users.current)
+
+    def test_auth_public(self):
+        # login
+        NAME = 'test.user.new'
+        EDIT = NAME + '.edited'
+        self.app = self.chino.applications.create("test", grant_type='password', client_type='public')
+        # Init 'public' client
+        self.chino_user = ChinoAPIClient(customer_id=cfg.customer_id,
+                                            url=cfg.url,
+                                            client_id=self.app.app_id,
+                                            client_secret=None
+                                        )
+        self.assertIsNone(self.chino_user.auth.client_secret)
+
+        user = self.chino.users.create(self.us._id, username=EDIT, password='12345678',
+                                       attributes=dict(first_name='john', last_name='doe',
+                                                       email='test@chino.io'))
+
+        self.chino_user.users.login(EDIT, '12345678')
+        ste_2 = self.chino_user.users.current()
+        self.assertEqual(ste_2.username, EDIT)
+
+        self.chino_user.users.refresh()
+        # it should be impossible to create the user after login with self.chino_user (no admin access)
         self.assertRaises(CallError, self.chino_user.users.create, self.us._id, username='error', password='12345678',
                           attributes=dict(first_name='john', last_name='doe',
                                           email='test@chino.io'))
@@ -178,11 +215,20 @@ class ApplicationsChinoTest(BaseChinoTest):
         self.logger.debug("tearing down %s", self.user)
 
     def test_CRUD(self):
-        app = self.chino.applications.create(name='tessst', grant_type='password')
+        app = self.chino.applications.create(name='tesssst_confidential', grant_type='password')
+        app_public = self.chino.applications.create(name='test_public', grant_type='password', client_type='public')
+
+        app_public1 = self.chino.applications.detail(app_public._id)
+        self.assertEqual(app_public._id, app_public1._id)
+        self.assertEqual(app_public.app_name, app_public1.app_name)
+
+        newname = 'test_confidential'
+        self.chino.applications.update(app._id, name=newname)
         app1 = self.chino.applications.detail(app._id)
-        self.chino.applications.update(app1._id, name='asds')
-        app2 = self.chino.applications.detail(app1._id)
+        self.assertEqual(app1.app_name, newname)
+
         apps = self.chino.applications.list()
+        self.chino.applications.delete(app_public1._id, force=True)
         self.chino.applications.delete(app1._id, force=True)
 
 
