@@ -730,7 +730,6 @@ class ChinoAuth(object):
         self.__auth = None
 
     def set_auth_application(self):
-        """client credentials are always sent in the body"""
         if self.client_secret:
             self.__auth = HTTPBasicAuth(self.client_id, self.client_secret)
         else:
