@@ -48,7 +48,8 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
         :param url:
         :return:
         """
-        self._url = url
+        # we have to ensure https, the 302 on http is forwarded to the GET operation even if it's a POST PUT DELETE
+        self._url = url.replace('http://','https://')
         self.auth = auth
         self.timeout = timeout
         if session:
