@@ -48,7 +48,8 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
         :param url:
         :return:
         """
-        self._url = url
+        # we have to ensure https, the 302 on http is forwarded to the GET operation even if it's a POST PUT DELETE
+        self._url = url.replace('http://','https://')
         self.auth = auth
         self.timeout = timeout
         if session:
@@ -199,7 +200,8 @@ class ChinoAPIUsers(ChinoAPIBase):
         auth = self.auth
         # self.auth = None
         url = "auth/token/"
-        pars = dict(username=username, password=password, client_id=self.auth.client_id, client_secret=self.auth.client_secret,
+        pars = dict(username=username, password=password, client_id=self.auth.client_id,
+                    client_secret=self.auth.client_secret,
                     grant_type='password')
 
         try:
@@ -216,13 +218,13 @@ class ChinoAPIUsers(ChinoAPIBase):
             # propagate exception
             raise ex
 
-    def refresh(self):
+    def refresh(self, refresh_token=None):
         # remove auth and save in temp var (in case of problems)
         auth = self.auth
         # self.auth = None
         url = "auth/token/"
         pars = dict(grant_type='refresh_token', client_id=self.auth.client_id, client_secret=self.auth.client_secret,
-                    refresh_token=self.auth.refresh_token)
+                    refresh_token=refresh_token if refresh_token else self.auth.refresh_token)
 
         try:
             self.auth.set_auth_null()
@@ -652,7 +654,7 @@ class ChinoAPISearches(ChinoAPIBase):
             return ListResult(Document, self.apicall('POST', url, data=data, params=kwargs))
 
     def documents_complex(self, schema_id, query, result_type="FULL_CONTENT", sort=None,
-                  **kwargs):
+                          **kwargs):
         url = 'search/documents/%s' % schema_id
         if not sort:
             sort = []

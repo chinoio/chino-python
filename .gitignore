@@ -107,3 +107,5 @@ snippets/permission_created.py
 AUTHORS
 ChangeLog
 README.txt
+test_gcp.py
+wtf.py

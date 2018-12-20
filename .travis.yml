@@ -1,8 +1,8 @@
 language: python
 branches:
-    only:
-    - master
-    - /\d+\.*\d*\.*\d*\w*/
+  only:
+  - master
+  - "/\\d+\\.*\\d*\\.*\\d*\\w*/"
 python:
 - '2.7'
 - '3.6'
@@ -18,3 +18,6 @@ deploy:
     distributions: sdist bdist_wheel
     repo: chinoio/chino-python
     python: 2.7
+notifications:
+  slack:
+    secure: fT9eIK0gqWNjsbC54P2nVD71P1ag0vNJNUnOoop3yqwLQ+hjO/H4KtY7NoVuCf14X1EW17gN7MQK2d3u0nYtC+13M9pK+R4bgmJeQG82sHPApW9RO9lxK4XuJfr1QLW3lF/T63mO73dmJxD89JcpnXOiWLc2ufkRuS0f4BAn3C+neZHkG6Totu3GLkd3zNIClc3DpreTA27Im4d+A5yEPY9GgW2K7G18wT8blrbiVKTMEpW6EZcH2U9fgVEwzukAH45pdpoqaocshn0It4KaBzbBr1unKJA+xKMFiScw25tdotsTyFIx/m+0c/aMIGLSy2N1yiLW/bK+lTOBx+sR0lGR4lV6VCZBGE+Hb6fqfcXGU0rKvYIsJEyr5gGzvNULscBY+Ou6cnhidovBUvKftdLveMC1dwsXo4/27yL5G6g8Q79X8MW1NpcU+Rj8krMd9ZMric9lh5EGP5kUKbr5pB7JS6dGGwh7DqC4zYXylj7oeJyPshXBu3hHM+6m9+uWv63tQatZiDNnB7yh+hAn2QQSDK2Sqg73QbSE250ZBRpp1BEv3EwUKoYkCllA1fOblSaTDaHpFJ+4I/4zhyBAIVZF98qbH23sZ45y8lqJ8SWifTpZ9VFUPAu/ilGSnqS8R4ITZ+Jlkik+peJKFpLM3wq2OEahFdiuTlKH341Al2w=
