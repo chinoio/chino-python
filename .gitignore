@@ -104,3 +104,5 @@ ChangeLog
 README.txt
 test_gcp.py
 wtf.py
+consent.py
+clean.py

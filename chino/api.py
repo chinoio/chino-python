@@ -40,7 +40,7 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
     auth = None
     timeout = 30
 
-    def __init__(self, auth, url, timeout, session=True):
+    def __init__(self, auth, url, timeout, session=True, force_https=True):
         """
         Init the class, auth is ref, so it can be changed and changes applies to all the other classes.
 
@@ -49,7 +49,10 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
         :return:
         """
         # we have to ensure https, the 302 on http is forwarded to the GET operation even if it's a POST PUT DELETE
-        self._url = url.replace('http://','https://')
+        if force_https:
+            self._url = url.replace('http://', 'https://') if not url.startswith('http://localhost') else url
+        else:
+            self._url = url
         self.auth = auth
         self.timeout = timeout
         if session:
@@ -168,8 +171,8 @@ class ChinoAPIBase(object):  # PRAGMA: NO COVER
 
 
 class ChinoAPIUsers(ChinoAPIBase):
-    def __init__(self, auth, url, timeout, session=True):
-        super(ChinoAPIUsers, self).__init__(auth, url, timeout, session)
+    def __init__(self, *args, **kwargs):
+        super(ChinoAPIUsers, self).__init__(*args, **kwargs)
 
     # TODO: expiration time.
 
@@ -300,8 +303,8 @@ class ChinoAPIUsers(ChinoAPIBase):
 
 
 class ChinoAPIGroups(ChinoAPIBase):
-    def __init__(self, auth, url, timeout, session=True):
-        super(ChinoAPIGroups, self).__init__(auth, url, timeout, session)
+    def __init__(self, *args, **kwargs):
+        super(ChinoAPIGroups, self).__init__(*args, **kwargs)
 
     def list(self, **pars):
         url = "groups"
@@ -338,8 +341,8 @@ class ChinoAPIGroups(ChinoAPIBase):
 
 
 class ChinoAPIPermissions(ChinoAPIBase):
-    def __init__(self, auth, url, timeout, session=True):
-        super(ChinoAPIPermissions, self).__init__(auth, url, timeout, session)
+    def __init__(self, *args, **kwargs):
+        super(ChinoAPIPermissions, self).__init__(*args, **kwargs)
 
     def resources(self, action, resource_type, subject_type, subject_id, manage=None, authorize=None):
         url = "perms/%s/%s/%s/%s" % (action,
@@ -394,8 +397,8 @@ class ChinoAPIPermissions(ChinoAPIBase):
 
 
 class ChinoAPIRepositories(ChinoAPIBase):
-    def __init__(self, auth, url, timeout, session=True):
-        super(ChinoAPIRepositories, self).__init__(auth, url, timeout, session)
+    def __init__(self, *args, **kwargs):
+        super(ChinoAPIRepositories, self).__init__(*args, **kwargs)
 
     def list(self, **pars):
         """
@@ -457,8 +460,8 @@ class ChinoAPIRepositories(ChinoAPIBase):
 
 
 class ChinoAPISchemas(ChinoAPIBase):
-    def __init__(self, auth, url, timeout, session=True):
-        super(ChinoAPISchemas, self).__init__(auth, url, timeout, session)
+    def __init__(self, *args, **kwargs):
+        super(ChinoAPISchemas, self).__init__(*args, **kwargs)
 
     def list(self, repository_id, **pars):
         """
@@ -509,8 +512,8 @@ class ChinoAPISchemas(ChinoAPIBase):
 
 
 class ChinoAPIDocuments(ChinoAPIBase):
-    def __init__(self, auth, url, timeout, session=True):
-        super(ChinoAPIDocuments, self).__init__(auth, url, timeout, session)
+    def __init__(self, *args, **kwargs):
+        super(ChinoAPIDocuments, self).__init__(*args, **kwargs)
 
     def list(self, schema_id, full_document=False, **pars):
         url = "schemas/%s/documents" % schema_id
@@ -546,8 +549,8 @@ class ChinoAPIDocuments(ChinoAPIBase):
 
 
 class ChinoAPIBlobs(ChinoAPIBase):
-    def __init__(self, auth, url, timeout, session=True):
-        super(ChinoAPIBlobs, self).__init__(auth, url, timeout, session)
+    def __init__(self, *args, **kwargs):
+        super(ChinoAPIBlobs, self).__init__(*args, **kwargs)
 
     def _read_bytes_from_file(self, filename, chunksize=32 * 1024):
         '''
@@ -626,8 +629,8 @@ class ChinoAPIBlobs(ChinoAPIBase):
 
 
 class ChinoAPISearches(ChinoAPIBase):
-    def __init__(self, auth, url, timeout, session=True):
-        super(ChinoAPISearches, self).__init__(auth, url, timeout, session)
+    def __init__(self, *args, **kwargs):
+        super(ChinoAPISearches, self).__init__(*args, **kwargs)
 
     def search(self, schema_id, result_type="FULL_CONTENT", filter_type="and", sort=None, filters=None, **kwargs):
         sys.stderr.write(
@@ -753,8 +756,8 @@ class HTTPBearerAuth(AuthBase):
 
 
 class ChinoAPIUserSchemas(ChinoAPIBase):
-    def __init__(self, auth, url, timeout, session=True):
-        super(ChinoAPIUserSchemas, self).__init__(auth, url, timeout, session)
+    def __init__(self, *args, **kwargs):
+        super(ChinoAPIUserSchemas, self).__init__(*args, **kwargs)
 
     def list(self, **pars):
         """
@@ -808,8 +811,8 @@ class ChinoAPIUserSchemas(ChinoAPIBase):
 
 
 class ChinoAPICollections(ChinoAPIBase):
-    def __init__(self, auth, url, timeout, session=True):
-        super(ChinoAPICollections, self).__init__(auth, url, timeout, session)
+    def __init__(self, *args, **kwargs):
+        super(ChinoAPICollections, self).__init__(*args, **kwargs)
 
     def list(self, **pars):
         """
@@ -873,8 +876,8 @@ class ChinoAPICollections(ChinoAPIBase):
 
 
 class ChinoAPIApplication(ChinoAPIBase):
-    def __init__(self, auth, url, timeout, session=True):
-        super(ChinoAPIApplication, self).__init__(auth, url, timeout, session)
+    def __init__(self, *args, **kwargs):
+        super(ChinoAPIApplication, self).__init__(*args, **kwargs)
 
     def list(self, **pars):
         """
@@ -924,8 +927,8 @@ class ChinoAPIApplication(ChinoAPIBase):
 
 
 class ChinoAPIConsents(ChinoAPIBase):
-    def __init__(self, auth, url, timeout, session=True):
-        super(ChinoAPIConsents, self).__init__(auth, url, timeout, session)
+    def __init__(self, *args, **kwargs):
+        super(ChinoAPIConsents, self).__init__(*args, **kwargs)
 
     def list(self, user_id=None, **pars):
         """
@@ -1030,7 +1033,7 @@ class ChinoAPIClient(object):
     users = groups = permissions = repositories = schemas = documents = blobs = searches = None
 
     def __init__(self, customer_id, customer_key=None, bearer_token=None, client_id=None, client_secret=None,
-                 version='v1', url='https://api.chino.io/', timeout=30, session=True):
+                 version='v1', url='https://api.chino.io/', timeout=30, session=True, force_https=True):
         """
         Init the class
 
@@ -1053,26 +1056,26 @@ class ChinoAPIClient(object):
                          bearer_token, client_id, client_secret)
         self.auth = auth
         self.users = ChinoAPIUsers(
-            auth, final_url, timeout=timeout, session=session)
+            auth, final_url, timeout=timeout, session=session, force_https=force_https)
         self.applications = ChinoAPIApplication(
-            auth, final_url, timeout=timeout, session=session)
+            auth, final_url, timeout=timeout, session=session, force_https=force_https)
         self.groups = ChinoAPIGroups(
-            auth, final_url, timeout=timeout, session=session)
+            auth, final_url, timeout=timeout, session=session, force_https=force_https)
         self.permissions = ChinoAPIPermissions(
-            auth, final_url, timeout=timeout, session=session)
+            auth, final_url, timeout=timeout, session=session, force_https=force_https)
         self.repositories = ChinoAPIRepositories(
-            auth, final_url, timeout=timeout, session=session)
+            auth, final_url, timeout=timeout, session=session, force_https=force_https)
         self.schemas = ChinoAPISchemas(
-            auth, final_url, timeout=timeout, session=session)
+            auth, final_url, timeout=timeout, session=session, force_https=force_https)
         self.user_schemas = ChinoAPIUserSchemas(
-            auth, final_url, timeout=timeout, session=session)
+            auth, final_url, timeout=timeout, session=session, force_https=force_https)
         self.collections = ChinoAPICollections(
-            auth, final_url, timeout=timeout, session=session)
+            auth, final_url, timeout=timeout, session=session, force_https=force_https)
         self.documents = ChinoAPIDocuments(
-            auth, final_url, timeout=timeout, session=session)
+            auth, final_url, timeout=timeout, session=session, force_https=force_https)
         self.blobs = ChinoAPIBlobs(
-            auth, final_url, timeout=timeout, session=session)
+            auth, final_url, timeout=timeout, session=session, force_https=force_https)
         self.searches = ChinoAPISearches(
-            auth, final_url, timeout=timeout, session=session)
+            auth, final_url, timeout=timeout, session=session, force_https=force_https)
         self.consents = ChinoAPIConsents(
-            auth, final_url, timeout=timeout, session=session)
+            auth, final_url, timeout=timeout, session=session, force_https=force_https)

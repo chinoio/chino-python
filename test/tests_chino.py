@@ -796,7 +796,7 @@ class SearchUsersChinoTest(BaseChinoTest):
             self.chino.users.delete(user._id, force=True)
         self.chino.user_schemas.delete(self.schema, True)
 
-    def test_search_docs(self):
+    def test_search_users(self):
         for i in range(9):
             self.chino.users.create(self.schema, username="user_test_%s" % i, password='1234567890AAaa',
                                     attributes=dict(fieldInt=123, fieldString='test', fieldBool=False,
@@ -815,13 +815,16 @@ class SearchUsersChinoTest(BaseChinoTest):
         res = self.chino.searches.users(self.schema,
                                         filters=[{"field": "username", "type": "eq", "value": 'user_test_last'}])
         self.assertEqual(res.paging.total_count, 1, res)
-
+        res = self.chino.searches.users(self.schema, filters=[{"field": "username", "type": "eq", "value": 'user_test_last'}],result_type="EXISTS")
+        self.assertEqual(res, True, res)
+        res = self.chino.searches.users(self.schema, filters=[{"field": "username", "type": "eq", "value": 'user_test_last'}],result_type="USERNAME_EXISTS")
+        self.assertEqual(res, True, res)
         self.chino.users.delete(last_doc.user_id, force=True)
         time.sleep(2)
         res = self.chino.searches.users(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
         self.assertEqual(res.paging.total_count, 9, res)
 
-    def test_search_docs_consistent(self):
+    def test_search_users_consistent(self):
         doc = None
         for i in range(4):
             doc = self.chino.users.create(self.schema, username="user_test_%s" % i, password='1234567890AAaa',
@@ -931,107 +934,107 @@ class PermissionChinoTest(BaseChinoTest):
         self.assertEqual(self.chino_user1.documents.list(self.schema).paging.total_count, 0)
         self.assertEqual(self.chino_user0.documents.list(self.schema).paging.total_count, 1)
 
-
-class ConsentChinoTest(BaseChinoTest):
-
-    def setUp(self):
-        super(ConsentChinoTest, self).setUp()
-        self.details = {
-            "description": "This policy was created for test purposes. The policy url is linked to Chino.io policy.",
-            "policy_url": "https://www.chino.io/legal/privacy-policy",
-            "policy_version": "test",
-            "collection_mode": "none"
-        }
-        self.data_controller = {
-          "company" : "Chino.io",
-          "contact" : "controller",
-          "address" : "Via S.G. Bosco 27, 38068 Rovereto",
-          "email" : "controller@mail.tld",
-          "VAT" : "n/d",
-          "on_behalf" : True
-        }
-        self.purposes = [
-          {
-              "authorized": True,
-              "purpose": "testing",
-              "description" : "Testing class api.ChinoAPIConsents"
-          },
-          {
-              "authorized": False,
-              "purpose": "testing",
-              "description" : "Testing class objects.Consent"
-          }
-        ]
-        self.user_id = "user_id"
-        self.user_id_alt = "another-user_id"
-        # list of Consents for test_list and test_withdraw
-        self.consent_ls = []
-        self.consent_ls.append(self.chino.consents.create(self.user_id, self.details, self.data_controller, self.purposes))
-        self.consent_ls.append(self.chino.consents.create(self.user_id_alt, self.details, self.data_controller, self.purposes))
-        self.consent_ls.append(self.chino.consents.create(self.user_id, self.details, self.data_controller, self.purposes))
-
-
-    def tearDown(self):
-        ls = self.chino.consents.list()
-        for c in ls.consents:
-            if c.to_dict()['policy_version'] == 'test':
-                self.chino.consents.delete(c._id)
-
-
-    def test_list(self):
-        ls = self.chino.consents.list()
-        self.assertIsNotNone(ls.paging)
-        self.assertIsNotNone(ls.consents)
-
-        ls = self.chino.consents.list(self.user_id)
-        for consent in ls.consents:
-            self.assertEqual(consent.to_dict()['user_id'], self.user_id)
-
-
-    def test_CRUD(self):
-        USER_ID1 = "username@mail.tld"
-        USER_ID2 = "another_username@mail.tld"
-        # CREATE
-        new = self.chino.consents.create(USER_ID1, self.details, self.data_controller, self.purposes)
-        list = self.chino.consents.list()
-        self.assertGreater(list.paging.count, 0)
-        read_id = 0
-        for consent in list.consents:
-            if consent._id == new._id:
-                read_id = consent._id
-        self.assertFalse(read_id == 0)
-        # READ
-        read = self.chino.consents.detail(read_id)
-        read_compare = self.chino.consents.detail(new._id)
-        self.assertTrue(self._equals(new.to_dict(), read.to_dict()),
-            msg="created:\n%s\n\nread:\n\n%s\n" % (new.to_json(), read.to_json())
-        )
-        # UPDATE
-        updated = self.chino.consents.update(read._id, USER_ID2, self.details, self.data_controller, self.purposes)
-        self.assertFalse(self._equals(new.to_dict(), updated.to_dict()),
-            msg=("Update returned an unmodified object.\nid1: %s\nid2: %s" % (new._id, updated._id)))
-
-        read = self.chino.consents.detail(read_id)
-        self.assertTrue(self._equals(updated.to_dict(), read.to_dict()),
-            msg="updated:\n%s\n\nread:\n\n%s\n" % (updated.to_json(), read.to_json())
-        )
-        history = self.chino.consents.history(read._id)
-        self.assertGreater(len(history.consents), 1)
-        # DELETE
-        self.chino.consents.delete(read._id)
-        for cid in [new._id, read._id, updated._id]:
-            self.assertRaises(CallError,
-                self.chino.consents.detail,
-                {'consent_id':cid}
-            )
-
-
-    def test_withdraw(self):
-        withdraw = self.chino.consents.list(user_id=self.user_id_alt).consents[0]
-        self.chino.consents.withdraw(withdraw._id)
-
-        read = self.chino.consents.detail(withdraw._id)
-        self.assertIsNotNone(read.to_dict()['withdrawn_date'])
+#
+# class ConsentChinoTest(BaseChinoTest):
+#
+#     def setUp(self):
+#         super(ConsentChinoTest, self).setUp()
+#         self.details = {
+#             "description": "This policy was created for test purposes. The policy url is linked to Chino.io policy.",
+#             "policy_url": "https://www.chino.io/legal/privacy-policy",
+#             "policy_version": "test",
+#             "collection_mode": "none"
+#         }
+#         self.data_controller = {
+#           "company" : "Chino.io",
+#           "contact" : "controller",
+#           "address" : "Via S.G. Bosco 27, 38068 Rovereto",
+#           "email" : "controller@mail.tld",
+#           "VAT" : "n/d",
+#           "on_behalf" : True
+#         }
+#         self.purposes = [
+#           {
+#               "authorized": True,
+#               "purpose": "testing",
+#               "description" : "Testing class api.ChinoAPIConsents"
+#           },
+#           {
+#               "authorized": False,
+#               "purpose": "testing",
+#               "description" : "Testing class objects.Consent"
+#           }
+#         ]
+#         self.user_id = "user_id"
+#         self.user_id_alt = "another-user_id"
+#         # list of Consents for test_list and test_withdraw
+#         self.consent_ls = []
+#         self.consent_ls.append(self.chino.consents.create(self.user_id, self.details, self.data_controller, self.purposes))
+#         self.consent_ls.append(self.chino.consents.create(self.user_id_alt, self.details, self.data_controller, self.purposes))
+#         self.consent_ls.append(self.chino.consents.create(self.user_id, self.details, self.data_controller, self.purposes))
+#
+#
+#     def tearDown(self):
+#         ls = self.chino.consents.list()
+#         for c in ls.consents:
+#             if c.to_dict()['policy_version'] == 'test':
+#                 self.chino.consents.delete(c._id)
+#
+#
+#     def test_list(self):
+#         ls = self.chino.consents.list()
+#         self.assertIsNotNone(ls.paging)
+#         self.assertIsNotNone(ls.consents)
+#
+#         ls = self.chino.consents.list(self.user_id)
+#         for consent in ls.consents:
+#             self.assertEqual(consent.to_dict()['user_id'], self.user_id)
+#
+#
+#     def test_CRUD(self):
+#         USER_ID1 = "username@mail.tld"
+#         USER_ID2 = "another_username@mail.tld"
+#         # CREATE
+#         new = self.chino.consents.create(USER_ID1, self.details, self.data_controller, self.purposes)
+#         list = self.chino.consents.list()
+#         self.assertGreater(list.paging.count, 0)
+#         read_id = 0
+#         for consent in list.consents:
+#             if consent._id == new._id:
+#                 read_id = consent._id
+#         self.assertFalse(read_id == 0)
+#         # READ
+#         read = self.chino.consents.detail(read_id)
+#         read_compare = self.chino.consents.detail(new._id)
+#         self.assertTrue(self._equals(new.to_dict(), read.to_dict()),
+#             msg="created:\n%s\n\nread:\n\n%s\n" % (new.to_json(), read.to_json())
+#         )
+#         # UPDATE
+#         updated = self.chino.consents.update(read._id, USER_ID2, self.details, self.data_controller, self.purposes)
+#         self.assertFalse(self._equals(new.to_dict(), updated.to_dict()),
+#             msg=("Update returned an unmodified object.\nid1: %s\nid2: %s" % (new._id, updated._id)))
+#
+#         read = self.chino.consents.detail(read_id)
+#         self.assertTrue(self._equals(updated.to_dict(), read.to_dict()),
+#             msg="updated:\n%s\n\nread:\n\n%s\n" % (updated.to_json(), read.to_json())
+#         )
+#         history = self.chino.consents.history(read._id)
+#         self.assertGreater(len(history.consents), 1)
+#         # DELETE
+#         self.chino.consents.delete(read._id)
+#         for cid in [new._id, read._id, updated._id]:
+#             self.assertRaises(CallError,
+#                 self.chino.consents.detail,
+#                 {'consent_id':cid}
+#             )
+#
+#
+#     def test_withdraw(self):
+#         withdraw = self.chino.consents.list(user_id=self.user_id_alt).consents[0]
+#         self.chino.consents.withdraw(withdraw._id)
+#
+#         read = self.chino.consents.detail(withdraw._id)
+#         self.assertIsNotNone(read.to_dict()['withdrawn_date'])
 
 
 
