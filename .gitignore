@@ -34,7 +34,9 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
+local_env.bat
 htmlcov/
+cover/
 .tox/
 .coverage
 .cache
@@ -53,6 +55,9 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# PyCharm
+.idea/
 
 _build
 Chino_API_Python_.egg-info
