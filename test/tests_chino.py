@@ -736,18 +736,17 @@ class SearchDocsChinoTest(BaseChinoTest):
             res=self.chino.documents.create(self.schema, content=dict(fieldInt=123, fieldString='test', fieldBool=False,
                                                               fieldDate='2015-02-19',
                                                               fieldDateTime='2015-02-19T16:39:47'),consistent=True)
-            print(res)
         last_doc = self.chino.documents.create(self.schema,
                                                content=dict(fieldInt=123, fieldString='test', fieldBool=False,
                                                             fieldDate='2015-02-19',
                                                             fieldDateTime='2015-02-19T16:39:47'),consistent=True)
 
         # self.chino.searches.search(self.schema) # TODO: improve tests
-        time.sleep(2)  # wait the index max update time
+        time.sleep(5)  # wait the index max update time
         res = self.chino.searches.documents(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
         self.assertEqual(res.paging.total_count, 10, res)
         self.chino.documents.delete(last_doc.document_id, force=True)
-        time.sleep(2)
+        time.sleep(5)
         res = self.chino.searches.documents(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
         self.assertEqual(res.paging.total_count, 9, res)
         res = self.chino.searches.documents_complex(self.schema, query={"field": "fieldInt", "type": "eq", "value": 123})
@@ -779,6 +778,64 @@ class SearchDocsChinoTest(BaseChinoTest):
                                             filters=[{"field": "fieldInt", "type": "eq", "value": max - 1}])
         self.assertEqual(res.paging.total_count, 0, res)
 
+    def test_search_docs_complex(self):
+        doc = None
+        max = 4
+        for i in range(max):
+            doc_content = dict(fieldInt=i, fieldString='test', fieldBool=False,
+                             fieldDate='2018-12-19',fieldDateTime='2018-12-19T16:39:47')
+            doc = self.chino.documents.create(
+                self.schema,
+                content=doc_content,
+                consistent=True
+            )
+            res = self.chino.searches.documents_complex(self.schema, result_type="ONLY_ID",
+                        query={
+                            "and": [{"field": key, "type": "eq", "value": doc_content[key]} for key in doc_content.keys()]
+                                   + [
+                                       {"field": "_id", "type": "eq", "value": doc.document_id}
+                                   ]
+                        }
+                    )
+            self.assertEquals(
+                doc.document_id, str(res.IDs[0])
+            )
+
+        self.assertEquals(
+            0,
+            len(
+                self.chino.searches.documents_complex(self.schema, result_type="NO_CONTENT",
+                    query={
+                        "or": [
+                            {"field": "fieldInt", "type": "eq", "value": max + 1},
+                            {"not": [
+                                {"field": "fieldInt", "type": "lte", "value": max}
+                            ]}
+                        ]
+                    }
+                ).documents
+            )
+        )
+
+        count_docs = self.chino.searches.documents_complex(self.schema, result_type="COUNT",
+            query={"field": "fieldDate", "type": "gte", "value": '2018-12-19'}
+        )
+        self.assertEqual(max, count_docs)
+
+        all_ids = self.chino.searches.documents_complex(self.schema, result_type="ONLY_ID",
+            query={"field": "fieldDate", "type": "gte", "value": '2018-12-19'}
+        )
+        self.assertIn(doc.document_id, [str(_id['id']) for _id in all_ids.to_dict()["IDs"]])
+
+        self.assertEquals(
+            doc.document_id,    # last created document
+            self.chino.searches.documents_complex(self.schema,
+                sort=[dict(field="fieldInt", order="desc")],
+                query={"field": "fieldDate", "type": "gte", "value": '2018-12-19'},
+                limit=1
+            ).documents[0].document_id
+        )
+
 
 class SearchUsersChinoTest(BaseChinoTest):
     def setUp(self):
@@ -802,6 +859,7 @@ class SearchUsersChinoTest(BaseChinoTest):
                                     attributes=dict(fieldInt=123, fieldString='test', fieldBool=False,
                                                     fieldDate='2015-02-19',
                                                     fieldDateTime='2015-02-19T16:39:47'))
+            time.sleep(3)
 
         last_doc = self.chino.users.create(self.schema, username="user_test_last", password='1234567890AAaa',
                                            attributes=dict(fieldInt=123, fieldString='test', fieldBool=False,
@@ -809,7 +867,8 @@ class SearchUsersChinoTest(BaseChinoTest):
                                                            fieldDateTime='2015-02-19T16:39:47'))
 
         # self.chino.searches.search(self.schema) # TODO: improve tests
-        time.sleep(2)  # wait the index max update time
+        time.sleep(15)  # wait twice the index max update time
+
         res = self.chino.searches.users(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
         self.assertEqual(res.paging.total_count, 10, res)
         res = self.chino.searches.users(self.schema,
@@ -820,8 +879,11 @@ class SearchUsersChinoTest(BaseChinoTest):
         res = self.chino.searches.users(self.schema, filters=[{"field": "username", "type": "eq", "value": 'user_test_last'}],result_type="USERNAME_EXISTS")
         self.assertEqual(res, True, res)
         self.chino.users.delete(last_doc.user_id, force=True)
-        time.sleep(2)
+        time.sleep(5)
         res = self.chino.searches.users(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
+        self.assertEqual(res.paging.total_count, 9, res)
+
+        res = self.chino.searches.users_complex(self.schema, query={"field": "fieldInt", "type": "eq", "value": 123})
         self.assertEqual(res.paging.total_count, 9, res)
 
     def test_search_users_consistent(self):
@@ -837,6 +899,61 @@ class SearchUsersChinoTest(BaseChinoTest):
             # self.chino.users.delete(doc.user_id, force=True,consistent=True)
             # res = self.chino.searches.users(self.schema, filters=[{"field": "fieldInt", "type": "eq", "value": 123}])
             # self.assertEqual(res.paging.total_count, 9, res)
+
+    def test_search_users_complex(self):
+        usr = None
+        max = 4
+        for i in range(max):
+            usr_attributes = dict(fieldInt=i, fieldString='test', fieldBool=False,
+                               fieldDate='2018-12-19', fieldDateTime='2018-12-19T16:39:47')
+            usr = self.chino.users.create(self.schema, username="user_test_%s" % i, password='1234567890AAaa',
+                                          attributes=usr_attributes,
+                                          consistent=True
+            )
+            self.assertTrue(
+                self.chino.searches.users_complex(self.schema, result_type="EXISTS",
+                    query={
+                        "and": [{"field": key, "type": "eq", "value": usr_attributes[key]}
+                                for key in usr_attributes.keys()]
+                               + [
+                                   {"field": "_id", "type": "eq",
+                                    "value": usr.user_id}
+                               ]
+                    }
+                )
+            )
+            self.assertTrue(
+                self.chino.searches.users_complex(self.schema, result_type="USERNAME_EXISTS",
+                    query={"field": "username", "type": "eq", "value": usr.username}
+                )
+            )
+
+        self.assertFalse(
+            self.chino.searches.users_complex(self.schema, result_type="EXISTS",
+                query={
+                    "or": [
+                        {"field": "fieldInt", "type": "eq", "value": max + 1},
+                        {"not": [
+                            {"field": "fieldInt", "type": "lte", "value": max}
+                        ]}
+                    ]
+                }
+            )
+        )
+
+        count_docs = self.chino.searches.users_complex(self.schema, result_type="COUNT",
+            query={"field": "fieldDate", "type": "gte", "value": '2018-12-19'}
+        )
+        self.assertEqual(max, count_docs)
+
+        self.assertEquals(
+            usr.user_id,    # last created user
+            self.chino.searches.users_complex(self.schema,
+                sort=[dict(field="fieldInt", order="desc")],
+                query={"field": "fieldDate", "type": "gte", "value": '2018-12-19'},
+                limit=1
+            ).users[0].user_id
+        )
 
 
 class PermissionChinoTest(BaseChinoTest):
@@ -934,107 +1051,107 @@ class PermissionChinoTest(BaseChinoTest):
         self.assertEqual(self.chino_user1.documents.list(self.schema).paging.total_count, 0)
         self.assertEqual(self.chino_user0.documents.list(self.schema).paging.total_count, 1)
 
-#
-# class ConsentChinoTest(BaseChinoTest):
-#
-#     def setUp(self):
-#         super(ConsentChinoTest, self).setUp()
-#         self.details = {
-#             "description": "This policy was created for test purposes. The policy url is linked to Chino.io policy.",
-#             "policy_url": "https://www.chino.io/legal/privacy-policy",
-#             "policy_version": "test",
-#             "collection_mode": "none"
-#         }
-#         self.data_controller = {
-#           "company" : "Chino.io",
-#           "contact" : "controller",
-#           "address" : "Via S.G. Bosco 27, 38068 Rovereto",
-#           "email" : "controller@mail.tld",
-#           "VAT" : "n/d",
-#           "on_behalf" : True
-#         }
-#         self.purposes = [
-#           {
-#               "authorized": True,
-#               "purpose": "testing",
-#               "description" : "Testing class api.ChinoAPIConsents"
-#           },
-#           {
-#               "authorized": False,
-#               "purpose": "testing",
-#               "description" : "Testing class objects.Consent"
-#           }
-#         ]
-#         self.user_id = "user_id"
-#         self.user_id_alt = "another-user_id"
-#         # list of Consents for test_list and test_withdraw
-#         self.consent_ls = []
-#         self.consent_ls.append(self.chino.consents.create(self.user_id, self.details, self.data_controller, self.purposes))
-#         self.consent_ls.append(self.chino.consents.create(self.user_id_alt, self.details, self.data_controller, self.purposes))
-#         self.consent_ls.append(self.chino.consents.create(self.user_id, self.details, self.data_controller, self.purposes))
-#
-#
-#     def tearDown(self):
-#         ls = self.chino.consents.list()
-#         for c in ls.consents:
-#             if c.to_dict()['policy_version'] == 'test':
-#                 self.chino.consents.delete(c._id)
-#
-#
-#     def test_list(self):
-#         ls = self.chino.consents.list()
-#         self.assertIsNotNone(ls.paging)
-#         self.assertIsNotNone(ls.consents)
-#
-#         ls = self.chino.consents.list(self.user_id)
-#         for consent in ls.consents:
-#             self.assertEqual(consent.to_dict()['user_id'], self.user_id)
-#
-#
-#     def test_CRUD(self):
-#         USER_ID1 = "username@mail.tld"
-#         USER_ID2 = "another_username@mail.tld"
-#         # CREATE
-#         new = self.chino.consents.create(USER_ID1, self.details, self.data_controller, self.purposes)
-#         list = self.chino.consents.list()
-#         self.assertGreater(list.paging.count, 0)
-#         read_id = 0
-#         for consent in list.consents:
-#             if consent._id == new._id:
-#                 read_id = consent._id
-#         self.assertFalse(read_id == 0)
-#         # READ
-#         read = self.chino.consents.detail(read_id)
-#         read_compare = self.chino.consents.detail(new._id)
-#         self.assertTrue(self._equals(new.to_dict(), read.to_dict()),
-#             msg="created:\n%s\n\nread:\n\n%s\n" % (new.to_json(), read.to_json())
-#         )
-#         # UPDATE
-#         updated = self.chino.consents.update(read._id, USER_ID2, self.details, self.data_controller, self.purposes)
-#         self.assertFalse(self._equals(new.to_dict(), updated.to_dict()),
-#             msg=("Update returned an unmodified object.\nid1: %s\nid2: %s" % (new._id, updated._id)))
-#
-#         read = self.chino.consents.detail(read_id)
-#         self.assertTrue(self._equals(updated.to_dict(), read.to_dict()),
-#             msg="updated:\n%s\n\nread:\n\n%s\n" % (updated.to_json(), read.to_json())
-#         )
-#         history = self.chino.consents.history(read._id)
-#         self.assertGreater(len(history.consents), 1)
-#         # DELETE
-#         self.chino.consents.delete(read._id)
-#         for cid in [new._id, read._id, updated._id]:
-#             self.assertRaises(CallError,
-#                 self.chino.consents.detail,
-#                 {'consent_id':cid}
-#             )
-#
-#
-#     def test_withdraw(self):
-#         withdraw = self.chino.consents.list(user_id=self.user_id_alt).consents[0]
-#         self.chino.consents.withdraw(withdraw._id)
-#
-#         read = self.chino.consents.detail(withdraw._id)
-#         self.assertIsNotNone(read.to_dict()['withdrawn_date'])
+@unittest.skipIf(cfg.url.startswith('https://api.chino.io'),"not on production")
+class ConsentChinoTest(BaseChinoTest):
+
+    def setUp(self):
+        super(ConsentChinoTest, self).setUp()
+        self.details = {
+            "description": "This policy was created for test purposes. The policy url is linked to Chino.io policy.",
+            "policy_url": "https://www.chino.io/legal/privacy-policy",
+            "policy_version": "test",
+            "collection_mode": "none"
+        }
+        self.data_controller = {
+          "company" : "Chino.io",
+          "contact" : "controller",
+          "address" : "Via S.G. Bosco 27, 38068 Rovereto",
+          "email" : "controller@mail.tld",
+          "VAT" : "n/d",
+          "on_behalf" : True
+        }
+        self.purposes = [
+          {
+              "authorized": True,
+              "purpose": "testing",
+              "description" : "Testing class api.ChinoAPIConsents"
+          },
+          {
+              "authorized": False,
+              "purpose": "testing",
+              "description" : "Testing class objects.Consent"
+          }
+        ]
+        self.user_id = "user_id"
+        self.user_id_alt = "another-user_id"
+        # list of Consents for test_list and test_withdraw
+        self.consent_ls = []
+        self.consent_ls.append(self.chino.consents.create(self.user_id, self.details, self.data_controller, self.purposes))
+        self.consent_ls.append(self.chino.consents.create(self.user_id_alt, self.details, self.data_controller, self.purposes))
+        self.consent_ls.append(self.chino.consents.create(self.user_id, self.details, self.data_controller, self.purposes))
+
+
+    def tearDown(self):
+        ls = self.chino.consents.list()
+        for c in ls.consents:
+            if c.to_dict()['policy_version'] == 'test':
+                self.chino.consents.delete(c._id)
+
+
+    def test_list(self):
+        ls = self.chino.consents.list()
+        self.assertIsNotNone(ls.paging)
+        self.assertIsNotNone(ls.consents)
+
+        ls = self.chino.consents.list(self.user_id)
+        for consent in ls.consents:
+            self.assertEqual(consent.to_dict()['user_id'], self.user_id)
+
+
+    def test_CRUD(self):
+        USER_ID1 = "username@mail.tld"
+        USER_ID2 = "another_username@mail.tld"
+        # CREATE
+        new = self.chino.consents.create(USER_ID1, self.details, self.data_controller, self.purposes)
+        list = self.chino.consents.list()
+        self.assertGreater(list.paging.count, 0)
+        read_id = 0
+        for consent in list.consents:
+            if consent._id == new._id:
+                read_id = consent._id
+        self.assertFalse(read_id == 0)
+        # READ
+        read = self.chino.consents.detail(read_id)
+        read_compare = self.chino.consents.detail(new._id)
+        self.assertTrue(self._equals(new.to_dict(), read.to_dict()),
+            msg="created:\n%s\n\nread:\n\n%s\n" % (new.to_json(), read.to_json())
+        )
+        # UPDATE
+        updated = self.chino.consents.update(read._id, USER_ID2, self.details, self.data_controller, self.purposes)
+        self.assertFalse(self._equals(new.to_dict(), updated.to_dict()),
+            msg=("Update returned an unmodified object.\nid1: %s\nid2: %s" % (new._id, updated._id)))
+
+        read = self.chino.consents.detail(read_id)
+        self.assertTrue(self._equals(updated.to_dict(), read.to_dict()),
+            msg="updated:\n%s\n\nread:\n\n%s\n" % (updated.to_json(), read.to_json())
+        )
+        history = self.chino.consents.history(read._id)
+        self.assertGreater(len(history.consents), 1)
+        # DELETE
+        self.chino.consents.delete(read._id)
+        for cid in [new._id, read._id, updated._id]:
+            self.assertRaises(CallError,
+                self.chino.consents.detail,
+                {'consent_id':cid}
+            )
+
+
+    def test_withdraw(self):
+        withdraw = self.chino.consents.list(user_id=self.user_id_alt).consents[0]
+        self.chino.consents.withdraw(withdraw._id)
+
+        read = self.chino.consents.detail(withdraw._id)
+        self.assertIsNotNone(read.to_dict()['withdrawn_date'])
 
 
 

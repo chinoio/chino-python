@@ -101,8 +101,8 @@ class _DictContent(ChinoBaseObject):
 
 
 class IDs(ChinoBaseObject):
-    __str_name__ = 'id'
-    __str_names__ = 'ids'
+    __str_name__ = 'ID'
+    __str_names__ = 'IDs'
 
     def __init__(self, id):
         self.id = id
