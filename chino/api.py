@@ -339,6 +339,10 @@ class ChinoAPIGroups(ChinoAPIBase):
         url = "groups/%s/users/%s" % (group_id, user_id)
         return self.apicall('DELETE', url)
 
+    def list_users(self, group_id, **pars):
+        url = "groups/%s/users" % group_id
+        return ListResult(User,self.apicall('GET', url, params=pars))
+
 
 class ChinoAPIPermissions(ChinoAPIBase):
     def __init__(self, *args, **kwargs):

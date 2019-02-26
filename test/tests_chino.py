@@ -239,6 +239,10 @@ class GroupChinoTest(BaseChinoTest):
         for group in list.groups:
             self.chino.groups.delete(group._id, force=True)
 
+        list = self.chino.user_schemas.list()
+        for repo in list.user_schemas:
+            self.chino.user_schemas.delete(repo._id, force=True)
+
     def test_list(self):
         list = self.chino.groups.list()
         self.assertIsNotNone(list.paging)
@@ -270,11 +274,17 @@ class GroupChinoTest(BaseChinoTest):
         fields = [dict(name='first_name', type='string'), dict(name='last_name', type='string'),
                   dict(name='email', type='string')]
         us = self.chino.user_schemas.create('test', fields)
+
         user = self.chino.users.create(us._id, username="ste", password='12345678',
                                        attributes=dict(first_name='john', last_name='doe',
                                                        email='test@chino.io'))
+        self.user =user
         # if nothing is raised, then fine
         add = self.chino.groups.add_user(group_created._id, user._id)
+        users = self.chino.groups.list_users(group_created._id)
+        self.assertEqual(users.paging.count, 1)
+        users = self.chino.groups.list_users(group_created._id, offset=2 )
+        self.assertEqual(users.paging.count, 0)
         rem = self.chino.groups.del_user(group_created._id, user._id)
         # delete the user at the end
         self.chino.groups.delete(group_created._id, force=True)
