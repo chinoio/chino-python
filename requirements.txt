@@ -1,6 +1,0 @@
-requests
-#for docs it requires sphinx - sphinx-doc.org
-#and the following
-#sphinx-autobuild
-#sphinx-autodoc-annotation
-#sphinx-rtd-theme
